@@ -9,12 +9,13 @@ treatment decisions.
 
 ## Current status
 
-**Phase 1 — Track A detection and segmentation baselines complete.** The pinned FracAtlas v7
-archive has been downloaded, verified, audited, and converted into a
-duplicate-aware frozen split. Two 30-epoch YOLOv8s detection runs and explicit
-held-out test evaluation are complete. The closest detection reproduction uses
-batch 16 and SGD; its test mAP50 is 0.492 and mAP50-95 is 0.208. The YOLOv8s-seg
-test mask scores are mAP50 0.407 and mAP50-95 0.127.
+**Phase 2 — Track A complete; first Track B classification baseline complete.**
+The pinned FracAtlas v7 archive has been downloaded, verified, audited, and
+converted into a duplicate-aware frozen split. The closest Track A detection
+reproduction reaches test mAP50 0.492 and mAP50-95 0.208. The YOLOv8s-seg test
+mask scores are mAP50 0.407 and mAP50-95 0.127. On Track B, the mobile-first
+MobileNetV3-Small classifier reaches test AUROC 0.895 and AUPRC 0.723 on 799
+fractured and non-fractured images.
 
 Important dataset facts:
 
@@ -85,6 +86,23 @@ split contains 574. Exact reproduction is therefore not claimed; see
 `docs/track_a_experiment_log.md` for the audited comparison and limitations.
 Fixed-threshold per-image and subgroup findings are recorded in
 `docs/track_a_error_analysis.md`.
+
+## Track B classification
+
+Track B uses the frozen duplicate-aware split and never resplits inside the
+trainer. The positive class receives a training-only loss weight. The decision
+threshold is selected on validation, stored in the checkpoint, and then applied
+unchanged to test.
+
+```powershell
+python scripts/train_track_b_classifier.py --epochs 1 --batch 32 --patience 1 --name track_b_mobilenet_v3_small_smoke_1ep
+python scripts/train_track_b_classifier.py --epochs 15 --batch 32 --patience 5 --name track_b_mobilenet_v3_small_15ep
+python scripts/evaluate_track_b_classifier.py --weights artifacts/runs/track_b_mobilenet_v3_small_15ep/best.pt --batch 64 --bootstrap 1000 --name track_b_mobilenet_v3_small_15ep_test_corrected
+python scripts/analyze_track_b_errors.py
+```
+
+See `docs/track_b_experiment_log.md` for the complete configuration, bootstrap
+confidence intervals, subgroup results, threshold audit note, and next ablation.
 
 ## Source and attribution
 

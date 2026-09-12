@@ -5,7 +5,7 @@
 - Protocol version: 0.1
 - Dataset gate: passed with documented limitations
 - Dataset release: FracAtlas v7
-- Model training: not started; Track A configuration frozen
+- Model training: Track A baselines and first Track B classifier complete
 - Clinical claim: none; research prototype only
 
 ## Primary question
