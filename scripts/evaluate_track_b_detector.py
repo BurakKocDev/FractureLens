@@ -90,6 +90,7 @@ def summarize(
     totals = {"tp": 0, "fp": 0, "fn": 0}
     negative_images = 0
     negative_images_with_fp = 0
+    false_positives_on_negative_images = 0
     for record in records:
         targets = np.asarray(record["targets"])
         confidences = np.asarray(record["confidences"])
@@ -104,6 +105,7 @@ def summarize(
         if len(targets) == 0:
             negative_images += 1
             negative_images_with_fp += int(fp > 0)
+            false_positives_on_negative_images += fp
     precision = totals["tp"] / max(1, totals["tp"] + totals["fp"])
     recall = totals["tp"] / max(1, totals["tp"] + totals["fn"])
     return {
@@ -112,7 +114,9 @@ def summarize(
         "lesion_sensitivity": recall,
         "f1": 2 * precision * recall / max(1e-12, precision + recall),
         "negative_images": negative_images,
-        "false_positives_per_negative_image": totals["fp"] / max(1, negative_images),
+        "false_positives_on_negative_images": false_positives_on_negative_images,
+        "false_positives_per_negative_image": false_positives_on_negative_images
+        / max(1, negative_images),
         "negative_image_false_alarm_rate": negative_images_with_fp / max(1, negative_images),
     }
 
