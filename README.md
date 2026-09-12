@@ -17,6 +17,13 @@ mask scores are mAP50 0.407 and mAP50-95 0.127. On Track B, the mobile-first
 MobileNetV3-Small classifier reaches test AUROC 0.895 and AUPRC 0.723 on 799
 fractured and non-fractured images.
 
+The final Track B DenseNet121 classifier reaches test AUROC 0.912 and AUPRC
+0.781. The negative-aware YOLOv8s detector reaches test mAP50 0.479 and
+mAP50-95 0.195, with a 0.76% false-alarm rate on negative images at the
+validation-selected operating point. OR fusion raises image-level sensitivity
+to 86.5%; agreement-only selective prediction covers 83.1% of images at 96.5%
+accuracy.
+
 Important dataset facts:
 
 - Figshare article: `22363012`
@@ -103,6 +110,8 @@ python scripts/analyze_track_b_errors.py
 
 See `docs/track_b_experiment_log.md` for the complete configuration, bootstrap
 confidence intervals, subgroup results, threshold audit note, and next ablation.
+Detection and global-to-local consistency results are recorded in
+`docs/track_b_detection_log.md`.
 
 ## Source and attribution
 
