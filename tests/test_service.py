@@ -15,6 +15,8 @@ def test_web_app_is_available_without_loading_models() -> None:
     assert '"fracture_signal_with_local_evidence"' in response.text
     assert '"no_fracture_signal"' in response.text
     assert 'window.location.protocol === "file:"' in response.text
+    assert 'id="download-button"' in response.text
+    assert "Model uyuşmazlık uyarısı" in response.text
 
 
 def test_health_does_not_load_models() -> None:

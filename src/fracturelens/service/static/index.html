@@ -100,6 +100,13 @@
       .pill.positive { color: #32100c; background: #ff8d80; }
       .pill.negative { color: #052416; background: var(--ok); }
       .pill.review { color: #2b1c00; background: var(--warning); }
+      .visual-result { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+      .visual-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+      .visual-title { font-size: 13px; color: var(--muted); }
+      .download-button { padding: 8px 11px; font-size: 12px; }
+      #result-preview { width: 100%; max-height: 360px; object-fit: contain; border-radius: 12px; background: #03070a; }
+      .legend { display: flex; align-items: center; gap: 8px; margin-top: 9px; color: var(--muted); font-size: 11px; }
+      .legend-box { width: 15px; height: 11px; border: 2px solid #ff5252; border-radius: 2px; }
       .disclaimer { margin-top: auto; padding-top: 22px; color: #748d9d; font-size: 11px; line-height: 1.5; }
       .loader { display: none; margin: auto; text-align: center; color: var(--muted); }
       .spinner { width: 34px; height: 34px; margin: 0 auto 14px; border: 3px solid rgba(255,255,255,.1); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
@@ -163,7 +170,15 @@
               <div class="row"><span>Sınıflandırıcı</span><span id="classifier-pill"></span></div>
               <div class="row"><span>Tespit edilen bölge</span><strong id="box-count"></strong></div>
               <div class="row"><span>Modeller uyumlu</span><span id="agreement-pill"></span></div>
-              <div class="row"><span>Uzman incelemesi</span><span id="review-pill"></span></div>
+              <div class="row"><span>Model uyuşmazlık uyarısı</span><span id="review-pill"></span></div>
+            </div>
+            <div class="visual-result">
+              <div class="visual-head">
+                <span class="visual-title">İşaretli sonuç görüntüsü</span>
+                <button class="button secondary download-button" id="download-button" type="button">PNG indir</button>
+              </div>
+              <canvas id="result-preview"></canvas>
+              <div class="legend"><span class="legend-box"></span>Kırmızı kutu: modelin eşik üstü şüpheli bulgusu</div>
             </div>
           </div>
           <div class="disclaimer">Araştırma prototipidir. Tanı veya tedavi kararı amacıyla kullanılamaz.</div>
@@ -190,6 +205,9 @@
       const loader = document.querySelector("#loader");
       const result = document.querySelector("#result");
       const error = document.querySelector("#error");
+      const resultPreview = document.querySelector("#result-preview");
+      const resultPreviewContext = resultPreview.getContext("2d");
+      const downloadButton = document.querySelector("#download-button");
       let selectedFile = null;
       let sourceImage = null;
       let objectUrl = null;
@@ -228,6 +246,14 @@
           context.fillStyle = "white";
           context.fillText(label, x1 + 8, labelY + labelHeight - 7);
         }
+      }
+
+      function renderResultPreview() {
+        const maxDimension = 900;
+        const scale = Math.min(1, maxDimension / Math.max(canvas.width, canvas.height));
+        resultPreview.width = Math.max(1, Math.round(canvas.width * scale));
+        resultPreview.height = Math.max(1, Math.round(canvas.height * scale));
+        resultPreviewContext.drawImage(canvas, 0, 0, resultPreview.width, resultPreview.height);
       }
 
       function selectFile(file) {
@@ -270,11 +296,26 @@
         document.querySelector("#box-count").textContent = data.localization.count;
         document.querySelector("#agreement-pill").innerHTML = booleanPill(data.decision.agreement);
         document.querySelector("#review-pill").innerHTML = data.decision.review_required
-          ? '<span class="pill review">Gerekli</span>'
-          : '<span class="pill yes">Gerekli değil</span>';
+          ? '<span class="pill review">Var</span>'
+          : '<span class="pill yes">Yok</span>';
         renderImage(data.localization.boxes);
+        renderResultPreview();
         loader.style.display = "none";
         result.style.display = "block";
+      }
+
+      function downloadVisualResult() {
+        if (!selectedFile || !canvas.width) return;
+        canvas.toBlob(blob => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          const basename = selectedFile.name.replace(/\.[^.]+$/, "");
+          link.href = url;
+          link.download = `${basename}_fracturelens.png`;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }, "image/png");
       }
 
       async function analyze() {
@@ -306,6 +347,7 @@
       selectButton.addEventListener("click", () => input.click());
       changeButton.addEventListener("click", () => input.click());
       analyzeButton.addEventListener("click", analyze);
+      downloadButton.addEventListener("click", downloadVisualResult);
       input.addEventListener("change", () => selectFile(input.files[0]));
       ["dragenter", "dragover"].forEach(name => dropzone.addEventListener(name, event => {
         event.preventDefault(); dropzone.classList.add("dragging");
