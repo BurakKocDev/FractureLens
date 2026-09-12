@@ -11,6 +11,7 @@ from PIL import Image
 
 from fracturelens.data.classification import SquareLetterbox
 from fracturelens.evaluation.classification import temperature_scale
+from fracturelens.inference.confidence import localization_confidence_level
 from fracturelens.inference.decision import fuse_decisions
 
 
@@ -97,6 +98,7 @@ class FractureLensPipeline:
             verbose=False,
         )[0]
         boxes = []
+        confidence_tiers = detector_config["confidence_tiers"]
         for xyxy, confidence in zip(
             detection.boxes.xyxy.cpu().tolist(),
             detection.boxes.conf.cpu().tolist(),
@@ -106,6 +108,11 @@ class FractureLensPipeline:
                 {
                     "xyxy": [round(float(value), 2) for value in xyxy],
                     "confidence": round(float(confidence), 6),
+                    "confidence_level": localization_confidence_level(
+                        float(confidence),
+                        float(confidence_tiers["medium_min"]),
+                        float(confidence_tiers["high_min"]),
+                    ),
                 }
             )
         decision = fuse_decisions(classifier_positive, len(boxes))
@@ -123,6 +130,12 @@ class FractureLensPipeline:
             "localization": {
                 "threshold": float(detector_config["confidence_threshold"]),
                 "count": len(boxes),
+                "max_confidence_level": (
+                    max(boxes, key=lambda box: float(box["confidence"]))["confidence_level"]
+                    if boxes
+                    else None
+                ),
+                "confidence_tiers": confidence_tiers,
                 "boxes": boxes,
             },
             "decision": decision.to_dict(),

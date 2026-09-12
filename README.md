@@ -9,7 +9,7 @@ treatment decisions.
 
 ## Current status
 
-**Phase 2 — Track A complete; first Track B classification baseline complete.**
+**Phase 3 — frozen Track A/Track B benchmarks and fused local prototype complete.**
 The pinned FracAtlas v7 archive has been downloaded, verified, audited, and
 converted into a duplicate-aware frozen split. The closest Track A detection
 reproduction reaches test mAP50 0.492 and mAP50-95 0.208. The YOLOv8s-seg test
@@ -22,7 +22,9 @@ The final Track B DenseNet121 classifier reaches test AUROC 0.912 and AUPRC
 mAP50-95 0.195, with a 0.76% false-alarm rate on negative images at the
 validation-selected operating point. OR fusion raises image-level sensitivity
 to 86.5%; agreement-only selective prediction covers 83.1% of images at 96.5%
-accuracy.
+accuracy. A local FastAPI service and browser interface now run the frozen
+DenseNet121 and YOLOv8s models together, show model disagreements, annotate
+candidate regions, and export a visual PNG report.
 
 Important dataset facts:
 
@@ -130,8 +132,12 @@ python scripts/run_api.py --host 127.0.0.1 --port 8000
 curl.exe -X POST http://127.0.0.1:8000/v1/predict -H "Content-Type: image/jpeg" --data-binary "@radiograph.jpg"
 ```
 
-The API accepts JPEG, PNG, or WebP request bodies up to 25 MiB. It is a research
-prototype and must not be used for diagnosis or treatment decisions.
+Open `http://127.0.0.1:8000/` for the local browser interface. The API accepts
+raw or multipart JPEG, PNG, and WebP requests up to 25 MiB. Localization boxes
+receive validation-derived low/medium/high display tiers; these describe model
+confidence rather than disease severity or clinical certainty. The application
+is a research prototype and must not be used for diagnosis or treatment
+decisions.
 
 ## Source and attribution
 

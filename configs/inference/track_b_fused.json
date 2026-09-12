@@ -14,6 +14,11 @@
     "weights": "artifacts/runs/track_b_detect_yolov8s_finetune_adamw_15ep/weights/best.pt",
     "weights_sha256": "761b616a8d5dc453b7416a6e19ec09291cb320c6886269ddbd0010499de31ce5",
     "confidence_threshold": 0.243522012578616,
+    "confidence_tiers": {
+      "medium_min": 0.30314465408805,
+      "high_min": 0.40748427672956,
+      "selection": "validation cumulative lesion precision >=0.70 and >=0.80"
+    },
     "image_size": 640
   },
   "fusion": {

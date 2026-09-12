@@ -30,6 +30,14 @@ validation only. At IoU 0.5 it gives 79 TP, 55 FP, and 97 FN on test: precision
 contain a false alarm, with six boxes total: 0.0091 false positives per negative
 image and a 0.76% negative-image false-alarm rate.
 
+For presentation only, retained boxes are assigned validation-derived detector
+confidence tiers. Scores from 0.2435 to below 0.3031 are `low`; 0.3031 to below
+0.4075 are `medium`; and 0.4075 or greater are `high`. The medium and high
+cutoffs are the first validation curve points reaching cumulative lesion
+precision of at least 0.70 and 0.80. These labels describe detector confidence,
+not disease severity or clinical certainty, and do not change the frozen
+operating point.
+
 ## Global-to-local consistency
 
 DenseNet121 global classification was joined with YOLOv8s local evidence by

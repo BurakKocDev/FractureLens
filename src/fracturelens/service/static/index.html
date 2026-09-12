@@ -100,6 +100,9 @@
       .pill.positive { color: #32100c; background: #ff8d80; }
       .pill.negative { color: #052416; background: var(--ok); }
       .pill.review { color: #2b1c00; background: var(--warning); }
+      .pill.low { color: #2b1c00; background: #ffd477; }
+      .pill.medium { color: #2c1700; background: #ffad66; }
+      .pill.high { color: #32100c; background: #ff8d80; }
       .visual-result { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
       .visual-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
       .visual-title { font-size: 13px; color: var(--muted); }
@@ -169,6 +172,7 @@
             <div class="rows">
               <div class="row"><span>Sınıflandırıcı</span><span id="classifier-pill"></span></div>
               <div class="row"><span>Tespit edilen bölge</span><strong id="box-count"></strong></div>
+              <div class="row"><span>En güçlü lokal bulgu</span><span id="local-confidence"></span></div>
               <div class="row"><span>Modeller uyumlu</span><span id="agreement-pill"></span></div>
               <div class="row"><span>Model uyuşmazlık uyarısı</span><span id="review-pill"></span></div>
             </div>
@@ -220,6 +224,7 @@
         `<span class="pill ${value ? "yes" : "no"}">${value ? yesText : noText}</span>`;
       const classificationPill = value =>
         `<span class="pill ${value ? "positive" : "negative"}">${value ? "Pozitif" : "Negatif"}</span>`;
+      const levelLabels = { low: "Düşük güven", medium: "Orta güven", high: "Yüksek güven" };
 
       function showError(message) {
         error.textContent = message;
@@ -322,7 +327,13 @@
         lastResult = data;
         const probability = data.classification.fracture_probability;
         const threshold = data.classification.threshold;
-        const copy = decisionCopy[data.decision.status] || [data.decision.status, "Model kararı oluşturuldu."];
+        const level = data.localization.max_confidence_level;
+        let copy = decisionCopy[data.decision.status] || [data.decision.status, "Model kararı oluşturuldu."];
+        if (data.decision.status === "fracture_signal_with_local_evidence" && level === "low") {
+          copy = ["Kırık şüphesi — düşük güvenli lokal bulgu", "Genel model pozitif; lokalizasyon adayı çalışma eşiğini geçti ancak düşük güven katmanında."];
+        } else if (data.decision.status === "fracture_signal_with_local_evidence" && level === "medium") {
+          copy = ["Kırık şüphesi — orta güvenli lokal bulgu", "Sınıflandırıcı ve lokalizasyon modeli aynı yönde; lokal bulgu orta güven katmanında."];
+        }
         document.querySelector("#decision-title").textContent = copy[0];
         document.querySelector("#decision-note").textContent = copy[1];
         document.querySelector("#probability").textContent = `%${(probability * 100).toFixed(1)}`;
@@ -330,6 +341,9 @@
         document.querySelector("#threshold").style.left = `${threshold * 100}%`;
         document.querySelector("#classifier-pill").innerHTML = classificationPill(data.classification.positive);
         document.querySelector("#box-count").textContent = data.localization.count;
+        document.querySelector("#local-confidence").innerHTML = level
+          ? `<span class="pill ${level}">${levelLabels[level]}</span>`
+          : '<span class="pill no">Kutu yok</span>';
         document.querySelector("#agreement-pill").innerHTML = booleanPill(data.decision.agreement);
         document.querySelector("#review-pill").innerHTML = data.decision.review_required
           ? '<span class="pill review">Var</span>'
