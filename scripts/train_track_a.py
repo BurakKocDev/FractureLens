@@ -6,6 +6,7 @@ import json
 import os
 import platform
 import subprocess
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -86,7 +87,7 @@ def main() -> int:
         "task": args.task,
         "model": run_config["model"],
         "epochs": epochs,
-        "imgsz": int(run_config["imgsz"]),
+        "requested_imgsz": int(run_config["imgsz"]),
         "batch": batch,
         "seed": 0,
     }
@@ -95,6 +96,8 @@ def main() -> int:
     model_path = Path(model.ckpt_path).resolve()
     provenance["model_path"] = str(model_path)
     provenance["model_sha256"] = sha256(model_path)
+    torch.cuda.reset_peak_memory_stats()
+    started_at = time.perf_counter()
     model.train(
         data=str(data_yaml),
         epochs=epochs,
@@ -111,6 +114,11 @@ def main() -> int:
         plots=True,
         verbose=True,
     )
+    provenance["elapsed_seconds"] = round(time.perf_counter() - started_at, 3)
+    provenance["peak_cuda_memory_mib"] = round(
+        torch.cuda.max_memory_allocated() / 1_048_576, 1
+    )
+    provenance["effective_imgsz"] = getattr(model.trainer.train_loader.dataset, "imgsz", None)
     actual_run_root = Path(model.trainer.save_dir)
     (actual_run_root / "provenance.json").write_text(
         json.dumps(provenance, indent=2) + "\n", encoding="utf-8", newline="\n"
