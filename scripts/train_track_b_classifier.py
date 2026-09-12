@@ -15,6 +15,7 @@ import numpy as np
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 os.environ.setdefault("TORCH_HOME", str(PROJECT_ROOT / "artifacts" / "torch_cache"))
+os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
 Path(os.environ["TORCH_HOME"]).mkdir(parents=True, exist_ok=True)
 
 
