@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fracturelens"
+version = "0.0.1"
+description = "Duplicate-aware fracture classification, localization, and segmentation research pipeline"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Burak Koc" }]
+dependencies = [
+  "numpy>=1.26,<3",
+  "pandas>=2.2,<4",
+  "Pillow>=10,<13",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8,<10",
+  "ruff>=0.12,<1",
+]
+vision = [
+  "albumentations>=2,<3",
+  "matplotlib>=3.9,<4",
+  "mlflow>=3,<4",
+  "pycocotools>=2.0.8,<3",
+  "torch>=2.7,<3",
+  "torchvision>=0.22,<1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+

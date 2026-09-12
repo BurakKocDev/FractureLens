@@ -1,0 +1,48 @@
+{
+  "experiment": "track_b_clean_benchmark",
+  "purpose": "Main duplicate-aware benchmark on fractured and non-fractured radiographs.",
+  "manifest": "manifests/fracatlas_v7_clean_split_seed20260912.csv",
+  "manifest_sha256": "416b599c6026c9fcaaa8edbe94e65cf8e657b230cca9a6b8ff6684b02c3c40c1",
+  "seed": 20260912,
+  "splits": {
+    "train": 2784,
+    "validation": 395,
+    "test": 799
+  },
+  "first_models": [
+    {
+      "task": "classification",
+      "model": "densenet121",
+      "imgsz": 512
+    },
+    {
+      "task": "detect",
+      "model": "yolov8s.pt",
+      "imgsz": 640
+    },
+    {
+      "task": "segment",
+      "model": "yolov8s-seg.pt",
+      "imgsz": 640
+    }
+  ],
+  "training_defaults": {
+    "epochs": 100,
+    "patience": 20,
+    "batch": 2,
+    "amp": true,
+    "workers": 2,
+    "checkpoint_metric": "validation task metric",
+    "test_access": "once after model and thresholds are frozen"
+  },
+  "primary_metrics": {
+    "classification": ["AUROC", "AUPRC", "sensitivity", "specificity", "ECE", "Brier"],
+    "detection": ["mAP50-95", "mAP50", "FROC", "false positives per negative image"],
+    "segmentation": ["Dice", "IoU", "boundary F1", "false-mask rate on negative images"]
+  },
+  "limitations": [
+    "The split is duplicate-group-aware, not patient-level, because patient identifiers are unavailable.",
+    "The dataset is JPG rather than clinical DICOM.",
+    "External clinical validation is outside this project phase."
+  ]
+}

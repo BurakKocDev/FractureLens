@@ -1,0 +1,27 @@
+{
+  "article_id": 22363012,
+  "article_url": "https://figshare.com/articles/dataset/The_dataset/22363012",
+  "api_url": "https://api.figshare.com/v2/articles/22363012/versions/7",
+  "doi": "10.6084/m9.figshare.22363012.v7",
+  "version": 7,
+  "published_at": "2026-06-13T00:36:14Z",
+  "file": {
+    "id": 65518038,
+    "name": "FracAtlas.zip",
+    "download_url": "https://ndownloader.figshare.com/files/65518038",
+    "size_bytes": 338436460,
+    "md5": "fe9da2c7c285915ebee69dfdab8fd396"
+  },
+  "license": {
+    "name": "CC BY 4.0",
+    "url": "https://creativecommons.org/licenses/by/4.0/"
+  },
+  "record_image_count": 4073,
+  "paper_image_count": 4083,
+  "notes": [
+    "The v7 Figshare description says 4,073 images and explicitly warns that counts differ from the original paper.",
+    "The archive must be audited before model training.",
+    "FracAtlas does not provide patient identifiers; duplicate-aware grouping is not patient-level splitting."
+  ]
+}
+

@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Raw and derived datasets
+data/raw/**
+data/interim/**
+data/processed/**
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+
+# Model and experiment artifacts
+artifacts/**
+models/**
+mlruns/**
+wandb/**
+!artifacts/.gitkeep
+
+# Front-end/build output
+node_modules/
+dist/
+.next/
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+

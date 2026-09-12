@@ -1,0 +1,35 @@
+{
+  "seed": 20260912,
+  "ratios": {
+    "train": 0.7,
+    "validation": 0.1,
+    "test": 0.2
+  },
+  "source_records": 4083,
+  "included_records": 3978,
+  "excluded_records": 105,
+  "split_counts": {
+    "test": 799,
+    "train": 2784,
+    "validation": 395
+  },
+  "positive_counts": {
+    "train": 485,
+    "validation": 68,
+    "test": 141
+  },
+  "negative_counts": {
+    "test": 658,
+    "train": 2299,
+    "validation": 327
+  },
+  "unique_split_groups": 3903,
+  "cross_split_group_violations": 0,
+  "cross_split_exact_pixel_duplicate_violations": 0,
+  "manifest_sha256": "416b599c6026c9fcaaa8edbe94e65cf8e657b230cca9a6b8ff6684b02c3c40c1",
+  "limitations": [
+    "FracAtlas has no patient identifiers; this is not a patient-level split.",
+    "Near-duplicate candidates are conservatively co-located, but repeated patients may remain.",
+    "Label-conflicting exact and near-duplicate components are excluded from model development."
+  ]
+}

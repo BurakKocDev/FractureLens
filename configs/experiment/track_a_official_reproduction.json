@@ -1,0 +1,48 @@
+{
+  "experiment": "track_a_official_reproduction",
+  "purpose": "Reproduce the official FracAtlas positive-only technical-validation setup before changing the protocol.",
+  "source": {
+    "repository": "https://github.com/XLR8-07/FracAtlas",
+    "notebook": "notebooks/Train_8s.ipynb",
+    "verified_on": "2026-09-12"
+  },
+  "data": {
+    "release": "FracAtlas v7",
+    "scope": "fractured images only",
+    "official_split": {
+      "train": 574,
+      "validation": 82,
+      "test": 63
+    }
+  },
+  "runs": [
+    {
+      "task": "detect",
+      "model": "yolov8s.pt",
+      "epochs": 30,
+      "imgsz": 600
+    },
+    {
+      "task": "segment",
+      "model": "yolov8s-seg.pt",
+      "epochs": 30,
+      "imgsz": 600
+    }
+  ],
+  "unreported_original_settings": [
+    "ultralytics package version",
+    "random seed",
+    "batch size",
+    "optimizer and learning-rate schedule",
+    "hardware and deterministic-kernel settings"
+  ],
+  "local_execution": {
+    "gpu": "NVIDIA GeForce RTX 3050 Ti Laptop GPU",
+    "vram_mib": 4096,
+    "first_batch": 2,
+    "amp": true,
+    "workers": 2,
+    "oom_fallback": "batch=1; do not change image size for the reproduction run"
+  },
+  "interpretation": "This track measures reproduction fidelity only. It cannot estimate false alarms on healthy images because the official split contains positives only."
+}
