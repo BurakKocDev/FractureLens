@@ -1,13 +1,20 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 import platform
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+os.environ.setdefault("YOLO_CONFIG_DIR", str(PROJECT_ROOT / "artifacts" / "ultralytics_config"))
+os.environ.setdefault("MPLCONFIGDIR", str(PROJECT_ROOT / "artifacts" / "matplotlib_config"))
+os.environ.setdefault("TORCH_HOME", str(PROJECT_ROOT / "artifacts" / "torch_cache"))
+for variable in ("YOLO_CONFIG_DIR", "MPLCONFIGDIR", "TORCH_HOME"):
+    Path(os.environ[variable]).mkdir(parents=True, exist_ok=True)
 
 
 def parse_args() -> argparse.Namespace:
@@ -27,6 +34,14 @@ def git_sha() -> str:
         capture_output=True,
         text=True,
     ).stdout.strip()
+
+
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def main() -> int:
@@ -77,6 +92,9 @@ def main() -> int:
     }
 
     model = YOLO(run_config["model"])
+    model_path = Path(model.ckpt_path).resolve()
+    provenance["model_path"] = str(model_path)
+    provenance["model_sha256"] = sha256(model_path)
     model.train(
         data=str(data_yaml),
         epochs=epochs,

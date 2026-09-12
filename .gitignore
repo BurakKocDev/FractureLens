@@ -1,6 +1,7 @@
 # Python
 __pycache__/
 *.py[cod]
+*.egg-info/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
@@ -22,6 +23,9 @@ data/processed/**
 # Model and experiment artifacts
 artifacts/**
 models/**
+*.pt
+*.onnx
+Ultralytics/
 mlruns/**
 wandb/**
 !artifacts/.gitkeep
@@ -36,4 +40,3 @@ dist/
 .vscode/
 .DS_Store
 Thumbs.db
-
