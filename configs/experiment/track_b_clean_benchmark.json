@@ -12,8 +12,15 @@
   "first_models": [
     {
       "task": "classification",
+      "model": "mobilenet_v3_small",
+      "imgsz": 224,
+      "role": "mobile-first baseline"
+    },
+    {
+      "task": "classification",
       "model": "densenet121",
-      "imgsz": 512
+      "imgsz": 512,
+      "role": "literature-oriented comparator"
     },
     {
       "task": "detect",
