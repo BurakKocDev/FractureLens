@@ -297,3 +297,97 @@ def prepare_track_a_segmentation(
             writer.writeheader()
             writer.writerows(manifest_rows)
     return summary
+
+
+def prepare_track_b_detection(
+    dataset_root: Path,
+    manifest_path: Path,
+    output_root: Path,
+) -> dict:
+    with manifest_path.open("r", encoding="utf-8", newline="") as stream:
+        rows = list(csv.DictReader(stream))
+    expected = {"train": 2784, "val": 395, "test": 799}
+    split_counts: Counter[str] = Counter()
+    positive_counts: Counter[str] = Counter()
+    instance_counts: Counter[str] = Counter()
+    seen_ids: set[str] = set()
+    output_rows = []
+    for row in rows:
+        image_id = row["image_id"]
+        if image_id in seen_ids:
+            raise ValueError(f"Duplicate Track B image id: {image_id}")
+        seen_ids.add(image_id)
+        split = "val" if row["split"] == "validation" else row["split"]
+        if split not in expected:
+            raise ValueError(f"Unexpected Track B split: {row['split']}")
+        source_image = dataset_root / row["source_relative_path"]
+        if not source_image.is_file():
+            raise FileNotFoundError(source_image)
+        ensure_hardlink(source_image, output_root / "images" / split / image_id)
+        label_name = Path(image_id).with_suffix(".txt")
+        destination_label = output_root / "labels" / split / label_name
+        fractured = int(row["fractured"])
+        if fractured:
+            source_label = dataset_root / "Annotations" / "YOLO" / label_name
+            instances = validate_yolo_label(source_label)
+            ensure_hardlink(source_label, destination_label)
+            positive_counts[split] += 1
+            instance_counts[split] += instances
+        else:
+            destination_label.parent.mkdir(parents=True, exist_ok=True)
+            if destination_label.exists() and destination_label.read_text(encoding="utf-8"):
+                raise FileExistsError(f"Negative label is not empty: {destination_label}")
+            destination_label.touch(exist_ok=True)
+            instances = 0
+        split_counts[split] += 1
+        output_rows.append(
+            {
+                "image_id": image_id,
+                "split": split,
+                "fractured": fractured,
+                "instance_count": instances,
+                "split_group": row["split_group"],
+            }
+        )
+
+    if dict(split_counts) != expected:
+        raise ValueError(f"Track B split counts changed: {dict(split_counts)}")
+    output_root.mkdir(parents=True, exist_ok=True)
+    (output_root / "data.yaml").write_text(
+        "\n".join(
+            [
+                f"path: {output_root.resolve().as_posix()}",
+                "train: images/train",
+                "val: images/val",
+                "test: images/test",
+                "names:",
+                "  0: fracture",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+        newline="\n",
+    )
+    with (output_root / "split_manifest.csv").open(
+        "w", encoding="utf-8", newline=""
+    ) as stream:
+        writer = csv.DictWriter(stream, fieldnames=list(output_rows[0]))
+        writer.writeheader()
+        writer.writerows(output_rows)
+    summary = {
+        "dataset": "FracAtlas v7 cleaned duplicate-aware full split",
+        "task": "detection",
+        "link_mode": "hardlink",
+        "image_counts": dict(split_counts),
+        "positive_counts": dict(positive_counts),
+        "negative_counts": {
+            split: split_counts[split] - positive_counts[split] for split in expected
+        },
+        "instance_counts": dict(instance_counts),
+        "unique_images": len(seen_ids),
+        "manifest_sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
+    }
+    (output_root / "preparation_summary.json").write_text(
+        json.dumps(summary, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
+    return summary
