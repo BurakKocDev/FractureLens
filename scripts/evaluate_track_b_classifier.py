@@ -20,6 +20,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--batch", type=int, default=64)
     parser.add_argument("--workers", type=int, default=2)
     parser.add_argument("--bootstrap", type=int, default=1000)
+    parser.add_argument("--temperature-scale", action="store_true")
     parser.add_argument("--name", required=True)
     return parser.parse_args()
 
@@ -122,6 +123,7 @@ def write_predictions(path: Path, rows: list[dict[str, object]], threshold: floa
             fieldnames=[
                 "image_id",
                 "label",
+                "raw_probability",
                 "probability",
                 "prediction",
                 "anatomy",
@@ -147,7 +149,11 @@ def main() -> int:
         ManifestClassificationDataset,
         SquareLetterbox,
     )
-    from fracturelens.evaluation.classification import classification_metrics
+    from fracturelens.evaluation.classification import (
+        classification_metrics,
+        fit_temperature,
+        temperature_scale,
+    )
 
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is unavailable; refusing an accidental CPU evaluation")
@@ -202,8 +208,23 @@ def main() -> int:
     model.to(device)
 
     validation_rows = predict(model, loaders["validation"], device, torch)
-    threshold = float(checkpoint["validation_threshold"])
+    raw_threshold = float(checkpoint["validation_threshold"])
+    temperature = 1.0
+    if args.temperature_scale:
+        temperature = fit_temperature(
+            [int(row["label"]) for row in validation_rows],
+            [float(row["probability"]) for row in validation_rows],
+        )
+    threshold = float(temperature_scale([raw_threshold], temperature)[0])
     test_rows = predict(model, loaders["test"], device, torch)
+    for rows in (validation_rows, test_rows):
+        raw_probabilities = [float(row["probability"]) for row in rows]
+        calibrated = temperature_scale(raw_probabilities, temperature)
+        for row, raw_probability, probability in zip(
+            rows, raw_probabilities, calibrated, strict=True
+        ):
+            row["raw_probability"] = raw_probability
+            row["probability"] = float(probability)
     reports = {}
     for split, rows in (("validation", validation_rows), ("test", test_rows)):
         labels = [int(row["label"]) for row in rows]
@@ -227,7 +248,10 @@ def main() -> int:
         "preprocessing": preprocessing,
         "manifest_sha256": sha256(manifest_path),
         "threshold_selection": "Youden J on validation during training; loaded from checkpoint",
+        "raw_threshold": raw_threshold,
         "threshold": threshold,
+        "temperature_scaling": args.temperature_scale,
+        "temperature": temperature,
         "bootstrap_replicates": args.bootstrap,
         "torch": torch.__version__,
         "torchvision": torchvision.__version__,

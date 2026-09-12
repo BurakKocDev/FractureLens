@@ -10,6 +10,7 @@ from fracturelens.evaluation.classification import (
     expected_calibration_error,
     roc_auc,
     select_youden_threshold,
+    temperature_scale,
 )
 
 
@@ -38,6 +39,7 @@ def test_ties_and_calibration_are_handled() -> None:
     assert roc_auc([0, 1], [0.5, 0.5]) == pytest.approx(0.5)
     assert expected_calibration_error([0, 1], [0.5, 0.5]) == pytest.approx(0.0)
     assert math.isnan(roc_auc([1, 1], [0.2, 0.8]))
+    assert temperature_scale([0.2, 0.8], 1.0).tolist() == pytest.approx([0.2, 0.8])
 
 
 @pytest.mark.parametrize(

@@ -86,6 +86,33 @@ def expected_calibration_error(
     return total
 
 
+def temperature_scale(
+    probabilities: Iterable[float], temperature: float
+) -> np.ndarray:
+    if temperature <= 0:
+        raise ValueError("temperature must be positive")
+    p = np.asarray(list(probabilities), dtype=np.float64)
+    if p.ndim != 1 or not np.isfinite(p).all() or ((p < 0) | (p > 1)).any():
+        raise ValueError("Expected finite probabilities in [0, 1]")
+    clipped = np.clip(p, 1e-7, 1 - 1e-7)
+    logits = np.log(clipped / (1 - clipped)) / temperature
+    return 1 / (1 + np.exp(-logits))
+
+
+def fit_temperature(labels: Iterable[int], probabilities: Iterable[float]) -> float:
+    y, p = _arrays(labels, probabilities)
+    temperatures = np.exp(np.linspace(np.log(0.1), np.log(10.0), 2001))
+    best_temperature = 1.0
+    best_loss = math.inf
+    for temperature in temperatures:
+        calibrated = np.clip(temperature_scale(p, float(temperature)), 1e-7, 1 - 1e-7)
+        loss = -float(np.mean(y * np.log(calibrated) + (1 - y) * np.log(1 - calibrated)))
+        if loss < best_loss:
+            best_loss = loss
+            best_temperature = float(temperature)
+    return best_temperature
+
+
 def classification_metrics(
     labels: Iterable[int], probabilities: Iterable[float], threshold: float
 ) -> dict[str, float | int]:
