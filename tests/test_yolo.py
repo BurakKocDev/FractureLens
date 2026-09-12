@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from fracturelens.data.yolo import read_image_ids, validate_yolo_label
+from fracturelens.data.yolo import coco_polygon_to_yolo, read_image_ids, validate_yolo_label
 
 
 class YoloPreparationTests(unittest.TestCase):
@@ -27,6 +27,23 @@ class YoloPreparationTests(unittest.TestCase):
             path.write_text("image_id\na.jpg\na.jpg\n", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "Duplicate"):
                 read_image_ids(path)
+
+    def test_coco_polygon_is_normalized_for_yolo_segmentation(self) -> None:
+        label = coco_polygon_to_yolo([0, 0, 100, 0, 100, 50], width=200, height=100)
+        self.assertEqual(
+            label,
+            "0 0.00000000 0.00000000 0.50000000 0.00000000 0.50000000 0.50000000",
+        )
+
+    def test_invalid_coco_polygon_is_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "three xy points"):
+            coco_polygon_to_yolo([0, 0, 1, 1], width=10, height=10)
+
+    def test_coco_polygon_clamps_floating_point_boundary_noise(self) -> None:
+        label = coco_polygon_to_yolo(
+            [0, 0, 100.00000000000001, 0, 100, 50], width=100, height=100
+        )
+        self.assertIn("1.00000000", label)
 
 
 if __name__ == "__main__":

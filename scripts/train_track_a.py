@@ -79,11 +79,6 @@ def main() -> int:
 
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is unavailable; refusing an accidental CPU training run")
-    if args.task == "segment":
-        raise NotImplementedError(
-            "Track A segmentation export is intentionally gated after detection"
-        )
-
     config_path = PROJECT_ROOT / "configs" / "experiment" / "track_a_official_reproduction.json"
     config = json.loads(config_path.read_text(encoding="utf-8"))
     run_config = next(item for item in config["runs"] if item["task"] == args.task)
@@ -93,9 +88,14 @@ def main() -> int:
     name = args.name or f"track_a_{args.task}_{args.profile}_{epochs}ep"
     output_root = PROJECT_ROOT / "artifacts" / "runs"
     run_root = output_root / name
-    data_yaml = PROJECT_ROOT / "data" / "processed" / "track_a_detect" / "data.yaml"
+    data_yaml = PROJECT_ROOT / "data" / "processed" / f"track_a_{args.task}" / "data.yaml"
     if not data_yaml.is_file():
-        raise FileNotFoundError("Run scripts/prepare_track_a_yolo.py first")
+        preparation_script = (
+            "prepare_track_a_yolo.py"
+            if args.task == "detect"
+            else "prepare_track_a_segmentation.py"
+        )
+        raise FileNotFoundError(f"Run scripts/{preparation_script} first")
     if run_root.exists():
         raise FileExistsError(f"Run name already exists: {run_root}")
 
