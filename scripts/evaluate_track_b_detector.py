@@ -57,26 +57,30 @@ def collect(
     image_root = dataset_root / "images" / split
     label_root = dataset_root / "labels" / split
     image_paths = sorted(path for path in image_root.iterdir() if path.is_file())
-    predictions = model.predict(
-        source=[str(path) for path in image_paths],
-        imgsz=640,
-        conf=0.001,
-        batch=batch,
-        device=0,
-        stream=True,
-        verbose=False,
-    )
     records = []
-    for image_path, result in zip(image_paths, predictions, strict=True):
-        height, width = result.orig_shape
-        records.append(
-            {
-                "image_id": image_path.name,
-                "targets": load_targets(label_root / f"{image_path.stem}.txt", width, height),
-                "boxes": result.boxes.xyxy.cpu().numpy(),
-                "confidences": result.boxes.conf.cpu().numpy(),
-            }
+    for start in range(0, len(image_paths), batch):
+        paths = image_paths[start : start + batch]
+        predictions = model.predict(
+            source=[str(path) for path in paths],
+            imgsz=640,
+            conf=0.001,
+            batch=len(paths),
+            device=0,
+            stream=False,
+            verbose=False,
         )
+        for image_path, result in zip(paths, predictions, strict=True):
+            height, width = result.orig_shape
+            records.append(
+                {
+                    "image_id": image_path.name,
+                    "targets": load_targets(
+                        label_root / f"{image_path.stem}.txt", width, height
+                    ),
+                    "boxes": result.boxes.xyxy.cpu().numpy(),
+                    "confidences": result.boxes.conf.cpu().numpy(),
+                }
+            )
     return records
 
 
