@@ -97,6 +97,8 @@
       .pill { padding: 3px 8px; border-radius: 99px; font-size: 11px; font-weight: 800; }
       .pill.yes { color: #052416; background: var(--ok); }
       .pill.no { color: #d8e4ea; background: rgba(255,255,255,.1); }
+      .pill.positive { color: #32100c; background: #ff8d80; }
+      .pill.negative { color: #052416; background: var(--ok); }
       .pill.review { color: #2b1c00; background: var(--warning); }
       .disclaimer { margin-top: auto; padding-top: 22px; color: #748d9d; font-size: 11px; line-height: 1.5; }
       .loader { display: none; margin: auto; text-align: center; color: var(--muted); }
@@ -189,8 +191,10 @@
       let objectUrl = null;
 
       const allowed = new Set(["image/jpeg", "image/png", "image/webp"]);
-      const pill = (value, yesText = "Pozitif", noText = "Negatif") =>
+      const booleanPill = (value, yesText = "Evet", noText = "Hayır") =>
         `<span class="pill ${value ? "yes" : "no"}">${value ? yesText : noText}</span>`;
+      const classificationPill = value =>
+        `<span class="pill ${value ? "positive" : "negative"}">${value ? "Pozitif" : "Negatif"}</span>`;
 
       function showError(message) {
         error.textContent = message;
@@ -243,10 +247,10 @@
       }
 
       const decisionCopy = {
-        "global_and_local_evidence": ["Kırık şüphesi — uyumlu bulgu", "Sınıflandırıcı ve lokalizasyon modeli aynı yönde bulgu üretti."],
+        "fracture_signal_with_local_evidence": ["Kırık şüphesi — uyumlu bulgu", "Sınıflandırıcı ve lokalizasyon modeli aynı yönde bulgu üretti."],
         "global_signal_without_local_evidence": ["Kırık şüphesi — bölge doğrulanamadı", "Genel model pozitif; lokalizasyon modeli eşik üstü bir bölge bulamadı. Uzman incelemesi gerekir."],
         "local_evidence_without_global_signal": ["Lokal şüpheli bölge", "Lokalizasyon modeli bulgu gösterdi; genel sınıflandırıcı negatif. Uzman incelemesi gerekir."],
-        "no_fracture_evidence": ["Kırık bulgusu saptanmadı", "Her iki model de belirlenen eşiklerde negatif sonuç verdi."]
+        "no_fracture_signal": ["Kırık bulgusu saptanmadı", "Her iki model de belirlenen eşiklerde negatif sonuç verdi."]
       };
 
       function showResult(data) {
@@ -258,9 +262,9 @@
         document.querySelector("#probability").textContent = `%${(probability * 100).toFixed(1)}`;
         document.querySelector("#probability-bar").style.width = `${Math.min(100, probability * 100)}%`;
         document.querySelector("#threshold").style.left = `${threshold * 100}%`;
-        document.querySelector("#classifier-pill").innerHTML = pill(data.classification.positive);
+        document.querySelector("#classifier-pill").innerHTML = classificationPill(data.classification.positive);
         document.querySelector("#box-count").textContent = data.localization.count;
-        document.querySelector("#agreement-pill").innerHTML = pill(data.decision.agreement, "Evet", "Hayır");
+        document.querySelector("#agreement-pill").innerHTML = booleanPill(data.decision.agreement);
         document.querySelector("#review-pill").innerHTML = data.decision.review_required
           ? '<span class="pill review">Gerekli</span>'
           : '<span class="pill yes">Gerekli değil</span>';
