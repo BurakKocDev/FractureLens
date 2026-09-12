@@ -95,3 +95,41 @@ that optimizer and batch configuration explain a material part of the gap.
 The remaining official-validation gap cannot be attributed cleanly while the
 historical 608-image training membership and legacy Ultralytics behavior remain
 different.
+
+## Segmentation data gate
+
+The COCO polygon source contains 719 positive images and 924 fracture
+instances. Conversion to YOLO segmentation format preserves the official v7
+574/82/63 image split and 764/91/69 instance counts. Every annotation contains
+one polygon with 3 to 17 points (mean 6.17). Split overlap is zero. A source
+coordinate equal to `1.0000000000000002` after normalization was accepted as
+floating-point boundary noise and clamped to 1.0 with a `1e-9` tolerance.
+
+## SGD segmentation run
+
+- Run: `track_a_segment_fidelity_sgd_b8_30ep`
+- Source commit: `6d2b22868dd5b3a10688ec48586f73f6f385424b`
+- Epochs/batch/optimizer: 30 / 8 / SGD
+- Requested/effective image size: 600 / 608
+- Training/validation images: 574 / 82
+- Training/validation instances: 764 / 91
+- Best joint checkpoint: epoch 25 by Ultralytics fitness
+- Validation box metrics: precision 0.646, recall 0.481, mAP50 0.530,
+  mAP50-95 0.258
+- Validation mask metrics: precision 0.763, recall 0.424, mAP50 0.509,
+  mAP50-95 0.192
+- Held-out test box metrics: precision 0.720, recall 0.420, mAP50 0.437,
+  mAP50-95 0.193
+- Held-out test mask metrics: precision 0.670, recall 0.391, mAP50 0.407,
+  mAP50-95 0.127
+- Training time: 552.4 seconds
+- Peak CUDA allocation: 2015.4 MiB
+- Best checkpoint SHA-256:
+  `5abb8c3593ee39c01371e6b6775a89948f82be125a22d9adaf8ecc131a145369`
+
+The segmentation model is precise when it emits a mask, but its test recall is
+only 0.391. The validation-to-test mask mAP50 drop from 0.509 to 0.407 also
+shows that the 82-image validation split is optimistic for this run. The
+dedicated detection checkpoint remains the better localizer on test
+(mAP50 0.492 versus the segmentation model's box mAP50 0.437). Segment masks
+therefore add explanatory shape, but do not replace the detection baseline.

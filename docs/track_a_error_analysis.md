@@ -50,6 +50,7 @@ Generated artifacts:
 ## Decision
 
 Do not optimize only against this positive-only split. It cannot measure false
-alarms on healthy radiographs. Complete the Track A segmentation baseline next,
-then use the duplicate-aware full-dataset Track B split to measure normal-image
-specificity, false positives per image, calibration, and selective prediction.
+alarms on healthy radiographs. The Track A segmentation baseline is now
+complete. Use the duplicate-aware full-dataset Track B split next to measure
+normal-image specificity, false positives per image, calibration, and selective
+prediction.
