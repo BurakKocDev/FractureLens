@@ -70,6 +70,7 @@ python scripts/train_track_a.py --task detect --epochs 30 --batch 2 --name track
 python scripts/evaluate_track_a.py --split test --name track_a_detect_30ep_test
 python scripts/train_track_a.py --task detect --profile fidelity-sgd --epochs 30 --batch 16 --name track_a_detect_fidelity_sgd_b16_30ep
 python scripts/evaluate_track_a.py --weights artifacts/runs/track_a_detect_fidelity_sgd_b16_30ep/weights/best.pt --split test --name track_a_detect_fidelity_sgd_b16_30ep_test
+python scripts/analyze_track_a_errors.py
 ```
 
 The trainer refuses to fall back silently to CPU, records environment and Git
@@ -78,6 +79,8 @@ provenance, and refuses to overwrite an existing named run.
 The official notebook output scans 608 training images, but the current v7
 split contains 574. Exact reproduction is therefore not claimed; see
 `docs/track_a_experiment_log.md` for the audited comparison and limitations.
+Fixed-threshold per-image and subgroup findings are recorded in
+`docs/track_a_error_analysis.md`.
 
 ## Source and attribution
 
