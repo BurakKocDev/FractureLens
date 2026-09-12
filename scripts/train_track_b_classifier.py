@@ -26,6 +26,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--workers", type=int, default=2)
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--patience", type=int, default=5)
+    parser.add_argument(
+        "--preprocessing", choices=("center-crop", "letterbox"), default="center-crop"
+    )
+    parser.add_argument("--selection-metric", choices=("auroc", "auprc"), default="auroc")
     parser.add_argument("--name", default="track_b_mobilenet_v3_small_15ep")
     return parser.parse_args()
 
@@ -79,7 +83,10 @@ def main() -> int:
     from torchvision.models import MobileNet_V3_Small_Weights, mobilenet_v3_small
     from torchvision.transforms import v2
 
-    from fracturelens.data.classification import ManifestClassificationDataset
+    from fracturelens.data.classification import (
+        ManifestClassificationDataset,
+        SquareLetterbox,
+    )
     from fracturelens.evaluation.classification import (
         classification_metrics,
         select_youden_threshold,
@@ -104,11 +111,21 @@ def main() -> int:
     config_path = PROJECT_ROOT / "configs" / "experiment" / "track_b_clean_benchmark.json"
     weights = MobileNet_V3_Small_Weights.DEFAULT
     normalization = weights.transforms()
+    geometry = (
+        SquareLetterbox(224)
+        if args.preprocessing == "letterbox"
+        else v2.RandomResizedCrop(224, scale=(0.8, 1.0), antialias=True)
+    )
+    eval_geometry = (
+        SquareLetterbox(224)
+        if args.preprocessing == "letterbox"
+        else v2.Compose([v2.Resize(256, antialias=True), v2.CenterCrop(224)])
+    )
     train_transform = v2.Compose(
         [
-            v2.RandomResizedCrop(224, scale=(0.8, 1.0), antialias=True),
             v2.RandomHorizontalFlip(p=0.5),
             v2.RandomRotation(7),
+            geometry,
             v2.ToImage(),
             v2.ToDtype(torch.float32, scale=True),
             v2.Normalize(mean=normalization.mean, std=normalization.std),
@@ -116,8 +133,7 @@ def main() -> int:
     )
     eval_transform = v2.Compose(
         [
-            v2.Resize(256, antialias=True),
-            v2.CenterCrop(224),
+            eval_geometry,
             v2.ToImage(),
             v2.ToDtype(torch.float32, scale=True),
             v2.Normalize(mean=normalization.mean, std=normalization.std),
@@ -170,6 +186,8 @@ def main() -> int:
         "model": "mobilenet_v3_small",
         "pretrained_weights": str(weights),
         "image_size": 224,
+        "preprocessing": args.preprocessing,
+        "selection_metric": args.selection_metric,
         "epochs_requested": args.epochs,
         "batch": args.batch,
         "workers": args.workers,
@@ -247,7 +265,9 @@ def main() -> int:
         )
         print(json.dumps(record), flush=True)
 
-        current_key = (record["validation_auroc"], record["validation_auprc"])
+        primary = f"validation_{args.selection_metric}"
+        secondary = "validation_auroc" if args.selection_metric == "auprc" else "validation_auprc"
+        current_key = (record[primary], record[secondary])
         if current_key > best_key:
             best_key = current_key
             epochs_without_improvement = 0
@@ -260,6 +280,8 @@ def main() -> int:
                     "validation_threshold": threshold,
                     "manifest_sha256": provenance["manifest_sha256"],
                     "image_size": 224,
+                    "preprocessing": args.preprocessing,
+                    "selection_metric": args.selection_metric,
                     "normalization_mean": list(normalization.mean),
                     "normalization_std": list(normalization.std),
                 },
@@ -274,9 +296,14 @@ def main() -> int:
             break
 
     provenance["epochs_completed"] = len(history)
-    provenance["best_epoch"] = int(torch.load(run_root / "best.pt", map_location="cpu")["epoch"])
-    provenance["best_validation_auroc"] = best_key[0]
-    provenance["best_validation_auprc"] = best_key[1]
+    best_checkpoint = torch.load(run_root / "best.pt", map_location="cpu", weights_only=False)
+    provenance["best_epoch"] = int(best_checkpoint["epoch"])
+    provenance["best_validation_auroc"] = float(
+        best_checkpoint["validation_metrics"]["auroc"]
+    )
+    provenance["best_validation_auprc"] = float(
+        best_checkpoint["validation_metrics"]["auprc"]
+    )
     provenance["elapsed_seconds"] = round(time.perf_counter() - started_at, 3)
     provenance["peak_cuda_memory_mib"] = round(
         torch.cuda.max_memory_allocated() / 1_048_576, 1

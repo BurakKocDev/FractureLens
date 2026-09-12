@@ -4,9 +4,25 @@ import csv
 from collections.abc import Callable
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 from fracturelens.data.audit import load_display_image
+
+
+class SquareLetterbox:
+    """Preserve the complete radiograph and pad it to a square canvas."""
+
+    def __init__(self, size: int, fill: int = 0) -> None:
+        self.size = size
+        self.fill = fill
+
+    def __call__(self, image: Image.Image) -> Image.Image:
+        return ImageOps.pad(
+            image,
+            (self.size, self.size),
+            method=Image.Resampling.BILINEAR,
+            color=(self.fill, self.fill, self.fill),
+        )
 
 
 class ManifestClassificationDataset:

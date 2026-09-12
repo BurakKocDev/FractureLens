@@ -143,7 +143,10 @@ def main() -> int:
     from torchvision.models import mobilenet_v3_small
     from torchvision.transforms import v2
 
-    from fracturelens.data.classification import ManifestClassificationDataset
+    from fracturelens.data.classification import (
+        ManifestClassificationDataset,
+        SquareLetterbox,
+    )
     from fracturelens.evaluation.classification import classification_metrics
 
     if not torch.cuda.is_available():
@@ -158,10 +161,17 @@ def main() -> int:
         raise FileExistsError(f"Evaluation name already exists: {output_root}")
     output_root.mkdir(parents=True)
 
+    preprocessing = checkpoint.get("preprocessing", "center-crop")
+    geometry = (
+        SquareLetterbox(int(checkpoint["image_size"]))
+        if preprocessing == "letterbox"
+        else v2.Compose(
+            [v2.Resize(256, antialias=True), v2.CenterCrop(int(checkpoint["image_size"]))]
+        )
+    )
     transform = v2.Compose(
         [
-            v2.Resize(256, antialias=True),
-            v2.CenterCrop(int(checkpoint["image_size"])),
+            geometry,
             v2.ToImage(),
             v2.ToDtype(torch.float32, scale=True),
             v2.Normalize(
@@ -214,6 +224,7 @@ def main() -> int:
         "weights_sha256": sha256(weights_path),
         "checkpoint_epoch": int(checkpoint["epoch"]),
         "model": checkpoint["model_name"],
+        "preprocessing": preprocessing,
         "manifest_sha256": sha256(manifest_path),
         "threshold_selection": "Youden J on validation during training; loaded from checkpoint",
         "threshold": threshold,

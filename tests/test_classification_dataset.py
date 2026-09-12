@@ -5,7 +5,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from fracturelens.data.classification import ManifestClassificationDataset
+from fracturelens.data.classification import ManifestClassificationDataset, SquareLetterbox
 
 
 def test_manifest_classification_dataset(tmp_path: Path) -> None:
@@ -47,3 +47,12 @@ def test_manifest_classification_dataset(tmp_path: Path) -> None:
     assert sample["image"].mode == "RGB"
     assert sample["label"] == 1
     assert dataset.labels == [1]
+
+
+def test_square_letterbox_preserves_full_image() -> None:
+    image = Image.new("RGB", (20, 10), "white")
+    output = SquareLetterbox(24)(image)
+
+    assert output.size == (24, 24)
+    assert output.getpixel((12, 12)) == (255, 255, 255)
+    assert output.getpixel((12, 1)) == (0, 0, 0)
