@@ -144,10 +144,7 @@ def main() -> int:
     from torchvision.transforms import v2
 
     from fracturelens.data.classification import ManifestClassificationDataset
-    from fracturelens.evaluation.classification import (
-        classification_metrics,
-        select_youden_threshold,
-    )
+    from fracturelens.evaluation.classification import classification_metrics
 
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is unavailable; refusing an accidental CPU evaluation")
@@ -195,10 +192,7 @@ def main() -> int:
     model.to(device)
 
     validation_rows = predict(model, loaders["validation"], device, torch)
-    threshold = select_youden_threshold(
-        [int(row["label"]) for row in validation_rows],
-        [float(row["probability"]) for row in validation_rows],
-    )
+    threshold = float(checkpoint["validation_threshold"])
     test_rows = predict(model, loaders["test"], device, torch)
     reports = {}
     for split, rows in (("validation", validation_rows), ("test", test_rows)):
@@ -221,7 +215,7 @@ def main() -> int:
         "checkpoint_epoch": int(checkpoint["epoch"]),
         "model": checkpoint["model_name"],
         "manifest_sha256": sha256(manifest_path),
-        "threshold_selection": "Youden J on validation only; frozen for test",
+        "threshold_selection": "Youden J on validation during training; loaded from checkpoint",
         "threshold": threshold,
         "bootstrap_replicates": args.bootstrap,
         "torch": torch.__version__,
