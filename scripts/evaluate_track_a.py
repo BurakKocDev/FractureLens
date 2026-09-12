@@ -17,11 +17,19 @@ for variable in ("YOLO_CONFIG_DIR", "MPLCONFIGDIR", "TORCH_HOME"):
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Evaluate a Track A detection checkpoint")
+    parser = argparse.ArgumentParser(description="Evaluate a Track A checkpoint")
+    parser.add_argument("--task", choices=("detect", "segment"), default="detect")
     parser.add_argument(
         "--weights",
         type=Path,
-        default=PROJECT_ROOT / "artifacts" / "runs" / "track_a_detect_30ep" / "weights" / "best.pt",
+        default=(
+            PROJECT_ROOT
+            / "artifacts"
+            / "runs"
+            / "track_a_detect_30ep"
+            / "weights"
+            / "best.pt"
+        ),
     )
     parser.add_argument("--split", choices=("val", "test"), default="test")
     parser.add_argument("--batch", type=int, default=2)
@@ -66,7 +74,9 @@ def main() -> int:
 
     model = YOLO(str(weights))
     result = model.val(
-        data=str(PROJECT_ROOT / "data" / "processed" / "track_a_detect" / "data.yaml"),
+        data=str(
+            PROJECT_ROOT / "data" / "processed" / f"track_a_{args.task}" / "data.yaml"
+        ),
         split=args.split,
         imgsz=600,
         batch=args.batch,
@@ -84,6 +94,7 @@ def main() -> int:
         "git_sha": git_sha(),
         "weights": str(weights),
         "weights_sha256": file_sha256(weights),
+        "task": args.task,
         "split": args.split,
         "requested_imgsz": 600,
         "effective_imgsz": 608,
