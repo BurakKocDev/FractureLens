@@ -37,8 +37,8 @@ def test_predict_rejects_non_image_content_type() -> None:
 
 def test_predict_accepts_swagger_style_file_upload(monkeypatch) -> None:
     class FakePipeline:
-        def predict(self, image: Image.Image) -> dict:
-            return {"width": image.width, "height": image.height}
+        def predict(self, image: Image.Image, image_id: str | None = None) -> dict:
+            return {"width": image.width, "height": image.height, "image_id": image_id}
 
     monkeypatch.setattr("fracturelens.service.app.get_pipeline", lambda: FakePipeline())
     image_bytes = BytesIO()
@@ -50,4 +50,4 @@ def test_predict_accepts_swagger_style_file_upload(monkeypatch) -> None:
     )
 
     assert response.status_code == 200
-    assert response.json() == {"width": 12, "height": 8}
+    assert response.json() == {"width": 12, "height": 8, "image_id": "xray.png"}

@@ -178,7 +178,7 @@
                 <button class="button secondary download-button" id="download-button" type="button">PNG indir</button>
               </div>
               <canvas id="result-preview"></canvas>
-              <div class="legend"><span class="legend-box"></span>Kırmızı kutu: modelin eşik üstü şüpheli bulgusu</div>
+              <div class="legend"><span class="legend-box" id="legend-box"></span><span id="legend-text"></span></div>
             </div>
           </div>
           <div class="disclaimer">Araştırma prototipidir. Tanı veya tedavi kararı amacıyla kullanılamaz.</div>
@@ -208,9 +208,12 @@
       const resultPreview = document.querySelector("#result-preview");
       const resultPreviewContext = resultPreview.getContext("2d");
       const downloadButton = document.querySelector("#download-button");
+      const legendBox = document.querySelector("#legend-box");
+      const legendText = document.querySelector("#legend-text");
       let selectedFile = null;
       let sourceImage = null;
       let objectUrl = null;
+      let lastResult = null;
 
       const allowed = new Set(["image/jpeg", "image/png", "image/webp"]);
       const booleanPill = (value, yesText = "Evet", noText = "Hayır") =>
@@ -233,27 +236,59 @@
         const lineWidth = Math.max(4, Math.round(Math.min(canvas.width, canvas.height) / 300));
         context.lineWidth = lineWidth;
         context.font = `bold ${Math.max(22, lineWidth * 3)}px system-ui`;
-        for (const box of boxes) {
+        const labelRects = [];
+        boxes.forEach((box, index) => {
           const [x1, y1, x2, y2] = box.xyxy;
           context.strokeStyle = "#ff5252";
           context.fillStyle = "#ff5252";
           context.strokeRect(x1, y1, x2 - x1, y2 - y1);
-          const label = `${Math.round(box.confidence * 100)}%`;
+          const label = `#${index + 1} · ${Math.round(box.confidence * 100)}%`;
           const labelWidth = context.measureText(label).width + 16;
           const labelHeight = Math.max(30, lineWidth * 4);
-          const labelY = Math.max(0, y1 - labelHeight);
+          let labelY = Math.max(0, y1 - labelHeight);
+          const intersects = candidate => labelRects.some(rect => !(
+            candidate.x + candidate.width < rect.x || rect.x + rect.width < candidate.x ||
+            candidate.y + candidate.height < rect.y || rect.y + rect.height < candidate.y
+          ));
+          while (labelY > 0 && intersects({ x: x1, y: labelY, width: labelWidth, height: labelHeight })) {
+            labelY = Math.max(0, labelY - labelHeight - 3);
+          }
+          labelRects.push({ x: x1, y: labelY, width: labelWidth, height: labelHeight });
           context.fillRect(x1, labelY, labelWidth, labelHeight);
           context.fillStyle = "white";
           context.fillText(label, x1 + 8, labelY + labelHeight - 7);
-        }
+        });
       }
 
-      function renderResultPreview() {
-        const maxDimension = 900;
-        const scale = Math.min(1, maxDimension / Math.max(canvas.width, canvas.height));
-        resultPreview.width = Math.max(1, Math.round(canvas.width * scale));
-        resultPreview.height = Math.max(1, Math.round(canvas.height * scale));
-        resultPreviewContext.drawImage(canvas, 0, 0, resultPreview.width, resultPreview.height);
+      function buildReportCanvas(data, maxDimension = null) {
+        const scale = maxDimension ? Math.min(1, maxDimension / Math.max(canvas.width, canvas.height)) : 1;
+        const imageWidth = Math.max(1, Math.round(canvas.width * scale));
+        const imageHeight = Math.max(1, Math.round(canvas.height * scale));
+        const headerHeight = Math.min(150, Math.max(64, Math.round(imageWidth * 0.09)));
+        const report = document.createElement("canvas");
+        report.width = imageWidth;
+        report.height = imageHeight + headerHeight;
+        const reportContext = report.getContext("2d");
+        reportContext.fillStyle = "#10212e";
+        reportContext.fillRect(0, 0, report.width, headerHeight);
+        reportContext.fillStyle = "#edf7fb";
+        reportContext.font = `800 ${Math.max(15, Math.round(headerHeight * 0.27))}px system-ui`;
+        reportContext.fillText(`Kırık model skoru: %${(data.classification.fracture_probability * 100).toFixed(1)}`, 16, headerHeight * 0.43);
+        reportContext.fillStyle = "#9bb2c0";
+        reportContext.font = `500 ${Math.max(11, Math.round(headerHeight * 0.19))}px system-ui`;
+        const localizationText = data.localization.count
+          ? `Lokalizasyon: ${data.localization.count} eşik üstü aday bölge`
+          : "Lokalizasyon: eşik üstü aday bölge bulunamadı";
+        reportContext.fillText(localizationText, 16, headerHeight * 0.76);
+        reportContext.drawImage(canvas, 0, headerHeight, imageWidth, imageHeight);
+        return report;
+      }
+
+      function renderResultPreview(data) {
+        const report = buildReportCanvas(data, 900);
+        resultPreview.width = report.width;
+        resultPreview.height = report.height;
+        resultPreviewContext.drawImage(report, 0, 0);
       }
 
       function selectFile(file) {
@@ -284,6 +319,7 @@
       };
 
       function showResult(data) {
+        lastResult = data;
         const probability = data.classification.fracture_probability;
         const threshold = data.classification.threshold;
         const copy = decisionCopy[data.decision.status] || [data.decision.status, "Model kararı oluşturuldu."];
@@ -299,14 +335,25 @@
           ? '<span class="pill review">Var</span>'
           : '<span class="pill yes">Yok</span>';
         renderImage(data.localization.boxes);
-        renderResultPreview();
+        renderResultPreview(data);
+        if (data.localization.count) {
+          const confidences = data.localization.boxes
+            .map((box, index) => `#${index + 1} %${Math.round(box.confidence * 100)}`)
+            .join(" · ");
+          legendBox.style.display = "inline-block";
+          legendText.textContent = `Modelin eşik üstü adayları: ${confidences}`;
+        } else {
+          legendBox.style.display = "none";
+          legendText.textContent = "Kutu çizilmedi: lokalizasyon modeli eşik üstü bir konum bulamadı.";
+        }
         loader.style.display = "none";
         result.style.display = "block";
       }
 
       function downloadVisualResult() {
-        if (!selectedFile || !canvas.width) return;
-        canvas.toBlob(blob => {
+        if (!selectedFile || !lastResult || !canvas.width) return;
+        const report = buildReportCanvas(lastResult);
+        report.toBlob(blob => {
           if (!blob) return;
           const url = URL.createObjectURL(blob);
           const link = document.createElement("a");

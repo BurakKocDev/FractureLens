@@ -65,4 +65,5 @@ async def predict(
             image = source.copy()
     except (UnidentifiedImageError, OSError) as exc:
         raise HTTPException(status_code=422, detail="Image could not be decoded") from exc
-    return get_pipeline().predict(image)
+    image_id = file.filename if file is not None else request.headers.get("x-image-id")
+    return get_pipeline().predict(image, image_id=image_id)
