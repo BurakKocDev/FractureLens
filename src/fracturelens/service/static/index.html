@@ -172,6 +172,10 @@
     </div>
 
     <script>
+      if (window.location.protocol === "file:") {
+        window.location.replace("http://127.0.0.1:8000/");
+      }
+
       const input = document.querySelector("#image-input");
       const selectButton = document.querySelector("#select-button");
       const changeButton = document.querySelector("#change-button");
@@ -290,7 +294,10 @@
         } catch (reason) {
           loader.style.display = "none";
           empty.style.display = "block";
-          showError(reason.message || "Sunucuya ulaşılamadı.");
+          const message = reason instanceof TypeError && reason.message === "Failed to fetch"
+            ? "API sunucusuna ulaşılamadı. FractureLens sunucusunun çalıştığını kontrol edin."
+            : (reason.message || "Sunucuya ulaşılamadı.");
+          showError(message);
         } finally {
           analyzeButton.disabled = false;
         }
