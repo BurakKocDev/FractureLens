@@ -27,6 +27,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--patience", type=int, default=5)
     parser.add_argument(
+        "--model", choices=("mobilenet_v3_small", "densenet121"), default="mobilenet_v3_small"
+    )
+    parser.add_argument(
         "--preprocessing", choices=("center-crop", "letterbox"), default="center-crop"
     )
     parser.add_argument("--selection-metric", choices=("auroc", "auprc"), default="auroc")
@@ -80,7 +83,12 @@ def main() -> int:
     import torchvision
     from torch import nn
     from torch.utils.data import DataLoader
-    from torchvision.models import MobileNet_V3_Small_Weights, mobilenet_v3_small
+    from torchvision.models import (
+        DenseNet121_Weights,
+        MobileNet_V3_Small_Weights,
+        densenet121,
+        mobilenet_v3_small,
+    )
     from torchvision.transforms import v2
 
     from fracturelens.data.classification import (
@@ -109,7 +117,11 @@ def main() -> int:
     dataset_root = PROJECT_ROOT / "data" / "raw" / "fracatlas-v7" / "FracAtlas"
     manifest_path = PROJECT_ROOT / "manifests" / "fracatlas_v7_clean_split_seed20260912.csv"
     config_path = PROJECT_ROOT / "configs" / "experiment" / "track_b_clean_benchmark.json"
-    weights = MobileNet_V3_Small_Weights.DEFAULT
+    weights = (
+        MobileNet_V3_Small_Weights.DEFAULT
+        if args.model == "mobilenet_v3_small"
+        else DenseNet121_Weights.DEFAULT
+    )
     normalization = weights.transforms()
     geometry = (
         SquareLetterbox(224)
@@ -159,9 +171,14 @@ def main() -> int:
         validation_dataset, shuffle=False, drop_last=False, **common_loader
     )
 
-    model = mobilenet_v3_small(weights=weights)
-    input_features = model.classifier[-1].in_features
-    model.classifier[-1] = nn.Linear(input_features, 1)
+    if args.model == "mobilenet_v3_small":
+        model = mobilenet_v3_small(weights=weights)
+        input_features = model.classifier[-1].in_features
+        model.classifier[-1] = nn.Linear(input_features, 1)
+    else:
+        model = densenet121(weights=weights)
+        input_features = model.classifier.in_features
+        model.classifier = nn.Linear(input_features, 1)
     device = torch.device("cuda:0")
     model.to(device)
     negative_count = len(train_dataset) - sum(train_dataset.labels)
@@ -183,7 +200,7 @@ def main() -> int:
         "torch": torch.__version__,
         "torchvision": torchvision.__version__,
         "gpu": torch.cuda.get_device_name(0),
-        "model": "mobilenet_v3_small",
+        "model": args.model,
         "pretrained_weights": str(weights),
         "image_size": 224,
         "preprocessing": args.preprocessing,
@@ -273,7 +290,7 @@ def main() -> int:
             epochs_without_improvement = 0
             torch.save(
                 {
-                    "model_name": "mobilenet_v3_small",
+                    "model_name": args.model,
                     "model_state_dict": model.state_dict(),
                     "epoch": epoch,
                     "validation_metrics": metrics,

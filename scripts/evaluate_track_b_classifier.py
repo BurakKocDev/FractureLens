@@ -142,7 +142,7 @@ def main() -> int:
     import torchvision
     from torch import nn
     from torch.utils.data import DataLoader
-    from torchvision.models import mobilenet_v3_small
+    from torchvision.models import densenet121, mobilenet_v3_small
     from torchvision.transforms import v2
 
     from fracturelens.data.classification import (
@@ -201,8 +201,14 @@ def main() -> int:
         )
         for split, dataset in datasets.items()
     }
-    model = mobilenet_v3_small(weights=None)
-    model.classifier[-1] = nn.Linear(model.classifier[-1].in_features, 1)
+    if checkpoint["model_name"] == "mobilenet_v3_small":
+        model = mobilenet_v3_small(weights=None)
+        model.classifier[-1] = nn.Linear(model.classifier[-1].in_features, 1)
+    elif checkpoint["model_name"] == "densenet121":
+        model = densenet121(weights=None)
+        model.classifier = nn.Linear(model.classifier.in_features, 1)
+    else:
+        raise ValueError(f"Unsupported checkpoint model: {checkpoint['model_name']}")
     model.load_state_dict(checkpoint["model_state_dict"])
     device = torch.device("cuda:0")
     model.to(device)
