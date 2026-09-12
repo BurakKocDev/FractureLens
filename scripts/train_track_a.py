@@ -21,6 +21,15 @@ for variable in ("YOLO_CONFIG_DIR", "MPLCONFIGDIR", "TORCH_HOME"):
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run a pinned FractureLens Track A experiment")
     parser.add_argument("--task", choices=("detect", "segment"), default="detect")
+    parser.add_argument(
+        "--profile",
+        choices=("modern", "fidelity-sgd"),
+        default="modern",
+        help=(
+            "modern keeps current Ultralytics defaults; fidelity-sgd mirrors the "
+            "official optimizer"
+        ),
+    )
     parser.add_argument("--epochs", type=int, default=None)
     parser.add_argument("--batch", type=int, default=None)
     parser.add_argument("--name", default=None)
@@ -35,6 +44,18 @@ def git_sha() -> str:
         capture_output=True,
         text=True,
     ).stdout.strip()
+
+
+def git_dirty() -> bool:
+    return bool(
+        subprocess.run(
+            ["git", "-c", f"safe.directory={PROJECT_ROOT.as_posix()}", "status", "--porcelain"],
+            cwd=PROJECT_ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+    )
 
 
 def sha256(path: Path) -> str:
@@ -59,14 +80,17 @@ def main() -> int:
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is unavailable; refusing an accidental CPU training run")
     if args.task == "segment":
-        raise NotImplementedError("Track A segmentation export is intentionally gated after detection")
+        raise NotImplementedError(
+            "Track A segmentation export is intentionally gated after detection"
+        )
 
     config_path = PROJECT_ROOT / "configs" / "experiment" / "track_a_official_reproduction.json"
     config = json.loads(config_path.read_text(encoding="utf-8"))
     run_config = next(item for item in config["runs"] if item["task"] == args.task)
     epochs = args.epochs or int(run_config["epochs"])
-    batch = args.batch or int(config["local_execution"]["first_batch"])
-    name = args.name or f"track_a_{args.task}_{epochs}ep"
+    default_batch_key = "fidelity_batch" if args.profile == "fidelity-sgd" else "first_batch"
+    batch = args.batch or int(config["local_execution"][default_batch_key])
+    name = args.name or f"track_a_{args.task}_{args.profile}_{epochs}ep"
     output_root = PROJECT_ROOT / "artifacts" / "runs"
     run_root = output_root / name
     data_yaml = PROJECT_ROOT / "data" / "processed" / "track_a_detect" / "data.yaml"
@@ -78,6 +102,10 @@ def main() -> int:
     provenance = {
         "created_at_utc": datetime.now(UTC).isoformat(),
         "git_sha": git_sha(),
+        "git_dirty": git_dirty(),
+        "training_script_sha256": sha256(Path(__file__).resolve()),
+        "experiment_config_sha256": sha256(config_path),
+        "data_yaml_sha256": sha256(data_yaml),
         "python": platform.python_version(),
         "platform": platform.platform(),
         "torch": torch.__version__,
@@ -85,12 +113,28 @@ def main() -> int:
         "ultralytics": ultralytics.__version__,
         "gpu": torch.cuda.get_device_name(0),
         "task": args.task,
+        "profile": args.profile,
         "model": run_config["model"],
         "epochs": epochs,
         "requested_imgsz": int(run_config["imgsz"]),
         "batch": batch,
         "seed": 0,
     }
+
+    train_overrides = {}
+    if args.profile == "fidelity-sgd":
+        official = config["official_notebook_observed"]
+        train_overrides = {
+            "optimizer": official["optimizer"],
+            "lr0": float(official["lr0"]),
+            "lrf": float(official["lrf"]),
+            "momentum": float(official["momentum"]),
+            "weight_decay": float(official["weight_decay"]),
+        }
+    provenance["train_overrides"] = train_overrides
+    provenance["fidelity_caveat"] = (
+        config["data"]["split_warning"] if args.profile == "fidelity-sgd" else None
+    )
 
     model = YOLO(run_config["model"])
     model_path = Path(model.ckpt_path).resolve()
@@ -113,6 +157,7 @@ def main() -> int:
         exist_ok=False,
         plots=True,
         verbose=True,
+        **train_overrides,
     )
     provenance["elapsed_seconds"] = round(time.perf_counter() - started_at, 3)
     provenance["peak_cuda_memory_mib"] = round(

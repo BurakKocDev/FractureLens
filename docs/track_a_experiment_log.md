@@ -29,3 +29,69 @@ the requested and effective values are retained in run provenance.
 The one-epoch metrics are not model-quality results. This run exists only to
 verify CUDA execution, parsing, augmentation, finite loss, validation, plots,
 and checkpoint creation before the 30-epoch reproduction.
+
+## Modern 30-epoch baseline
+
+- Run: `track_a_detect_30ep`
+- Epochs/batch/optimizer: 30 / 2 / AdamW selected by Ultralytics `auto`
+- Validation (82 images, 91 instances): precision 0.547, recall 0.385,
+  mAP50 0.438, mAP50-95 0.179
+- Held-out test (63 images, 69 instances): precision 0.560, recall 0.377,
+  mAP50 0.375, mAP50-95 0.145
+- Training time: 814.5 seconds
+- Peak CUDA allocation: 1262.2 MiB
+- Best checkpoint SHA-256:
+  `311d4aaef390b1419315cbde6899cbc40ebfbdde739fcf795589ccc3fc5fa8d2`
+
+The held-out test result is our measurement; the official notebook reports
+validation only, so the two rows must not be compared as if they used the same
+split.
+
+## Reproduction audit of the official notebook
+
+Cached output in `notebooks/Train_8s.ipynb` records Python 3.8.12, PyTorch
+1.10.2, Ultralytics 8.0.49, an RTX 3070 Laptop GPU with 8 GB VRAM, batch 16,
+SGD, learning rate 0.01, momentum 0.937, weight decay 0.0005, seed 0, and 8
+workers. It reports validation precision 0.807, recall 0.473, mAP50 0.562, and
+mAP50-95 0.276.
+
+The same output scans 608 training images and 82 validation images. The current
+FracAtlas v7 `train.csv` contains 574 images. We will not fabricate the missing
+historical 34-image membership. Consequently, the next local run is a
+configuration-fidelity experiment, not a claim of exact reproduction: it uses
+the current v7 split and explicit SGD settings. One-epoch smoke tests passed at
+both batch 8 and the notebook's batch 16 setting; batch 16 is therefore used
+for the controlled 30-epoch comparison despite the local GPU having half the
+notebook GPU's VRAM.
+
+## SGD fidelity run
+
+- Run: `track_a_detect_fidelity_sgd_b16_30ep`
+- Epochs/batch/optimizer: 30 / 16 / SGD
+- Explicit optimizer settings: lr0 0.01, lrf 0.01, momentum 0.937,
+  weight decay 0.0005
+- Best epoch: 27 by mAP50-95
+- Best-epoch CSV metrics: precision 0.579, recall 0.495, mAP50 0.470,
+  mAP50-95 0.215
+- Held-out test (63 images, 69 instances): precision 0.607, recall 0.470,
+  mAP50 0.492, mAP50-95 0.208
+- Training time: 367.6 seconds
+- Peak CUDA allocation: 3054.2 MiB
+- Best checkpoint SHA-256:
+  `f50328dea3b64ef249416f2b507fa05a8f62e2a4f7a994261bb28f7bac54daae`
+
+The run used training script SHA-256
+`65d26d553635c08f2b989461624146c4dccc21ff03d42d2854b05a0ef08b2a56`
+and experiment configuration SHA-256
+`c80f505b99e1dde285d7436e9d8f6a6de3fe975ad0831e44b5db6a000e5b8ec4`.
+It ran from Git commit `40279a8203838e8e61ce7dc88a1f39747ede59b1` with
+uncommitted experiment-profile changes, which are captured by the two hashes
+above and committed immediately after evaluation.
+
+Compared with the modern batch-2/AdamW baseline, the SGD fidelity run improves
+validation mAP50-95 from 0.179 to 0.215 and test mAP50-95 from 0.145 to 0.208.
+It also improves test mAP50 from 0.375 to 0.492. This supports the conclusion
+that optimizer and batch configuration explain a material part of the gap.
+The remaining official-validation gap cannot be attributed cleanly while the
+historical 608-image training membership and legacy Ultralytics behavior remain
+different.

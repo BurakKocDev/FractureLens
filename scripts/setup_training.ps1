@@ -21,6 +21,6 @@ $env:PIP_EXTRA_INDEX_URL = "https://pypi.org/simple"
     --index-url https://download.pytorch.org/whl/cu126
 
 & $venvPython -m pip install ultralytics==8.4.149
-& $venvPython -m pip install --editable $projectRoot
+& $venvPython -m pip install --editable "$projectRoot[dev]"
 
 & $venvPython scripts/verify_training_environment.py

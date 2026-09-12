@@ -9,10 +9,11 @@ treatment decisions.
 
 ## Current status
 
-**Phase 0 — data gate complete.** The pinned FracAtlas v7 archive has been
-downloaded, verified, audited, and converted into a duplicate-aware frozen
-split. The manifest-backed decoder and one-batch smoke test enforce EXIF-aware,
-truncated-JPEG-tolerant loading before model work.
+**Phase 1 — Track A detection baseline complete.** The pinned FracAtlas v7
+archive has been downloaded, verified, audited, and converted into a
+duplicate-aware frozen split. Two 30-epoch YOLOv8s detection runs and explicit
+held-out test evaluation are complete. The closest official-configuration run
+uses batch 16 and SGD; its test mAP50 is 0.492 and mAP50-95 is 0.208.
 
 Important dataset facts:
 
@@ -67,10 +68,16 @@ python scripts/prepare_track_a_yolo.py
 python scripts/train_track_a.py --task detect --epochs 1 --batch 2 --name track_a_detect_smoke
 python scripts/train_track_a.py --task detect --epochs 30 --batch 2 --name track_a_detect_30ep
 python scripts/evaluate_track_a.py --split test --name track_a_detect_30ep_test
+python scripts/train_track_a.py --task detect --profile fidelity-sgd --epochs 30 --batch 16 --name track_a_detect_fidelity_sgd_b16_30ep
+python scripts/evaluate_track_a.py --weights artifacts/runs/track_a_detect_fidelity_sgd_b16_30ep/weights/best.pt --split test --name track_a_detect_fidelity_sgd_b16_30ep_test
 ```
 
 The trainer refuses to fall back silently to CPU, records environment and Git
 provenance, and refuses to overwrite an existing named run.
+
+The official notebook output scans 608 training images, but the current v7
+split contains 574. Exact reproduction is therefore not claimed; see
+`docs/track_a_experiment_log.md` for the audited comparison and limitations.
 
 ## Source and attribution
 
