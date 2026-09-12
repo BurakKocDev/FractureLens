@@ -66,6 +66,7 @@ trees, downloaded weights, and run artifacts stay outside Git.
 python scripts/prepare_track_a_yolo.py
 python scripts/train_track_a.py --task detect --epochs 1 --batch 2 --name track_a_detect_smoke
 python scripts/train_track_a.py --task detect --epochs 30 --batch 2 --name track_a_detect_30ep
+python scripts/evaluate_track_a.py --split test --name track_a_detect_30ep_test
 ```
 
 The trainer refuses to fall back silently to CPU, records environment and Git
