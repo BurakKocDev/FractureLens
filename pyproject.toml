@@ -29,6 +29,10 @@ vision = [
   "torch>=2.7,<3",
   "torchvision>=0.22,<1",
 ]
+service = [
+  "fastapi>=0.116,<1",
+  "uvicorn>=0.35,<1",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -43,4 +47,3 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
-

@@ -113,6 +113,26 @@ confidence intervals, subgroup results, threshold audit note, and next ablation.
 Detection and global-to-local consistency results are recorded in
 `docs/track_b_detection_log.md`.
 
+## Fused inference prototype
+
+Run both frozen models and return calibrated classification, fracture boxes,
+OR/AND decisions, and a disagreement review flag:
+
+```powershell
+python scripts/predict_fracture.py path/to/radiograph.jpg --output-json result.json --overlay overlay.jpg
+```
+
+Install the optional service dependencies and start the local API:
+
+```powershell
+pip install -e ".[service]"
+python scripts/run_api.py --host 127.0.0.1 --port 8000
+curl.exe -X POST http://127.0.0.1:8000/v1/predict -H "Content-Type: image/jpeg" --data-binary "@radiograph.jpg"
+```
+
+The API accepts JPEG, PNG, or WebP request bodies up to 25 MiB. It is a research
+prototype and must not be used for diagnosis or treatment decisions.
+
 ## Source and attribution
 
 FracAtlas is distributed under CC BY 4.0. Cite:

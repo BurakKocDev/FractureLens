@@ -1,0 +1,24 @@
+{
+  "name": "fracturelens_track_b_fused_v1",
+  "classifier": {
+    "model": "densenet121",
+    "weights": "artifacts/runs/track_b_densenet121_letterbox_auprc_15ep/best.pt",
+    "weights_sha256": "394bd5296d456abebafcdb12e04c3018477f05bce78a5745206588d6aef94bf9",
+    "temperature": 1.18576874816716,
+    "threshold": 0.359516855691905,
+    "image_size": 224,
+    "preprocessing": "letterbox"
+  },
+  "detector": {
+    "model": "yolov8s",
+    "weights": "artifacts/runs/track_b_detect_yolov8s_finetune_adamw_15ep/weights/best.pt",
+    "weights_sha256": "761b616a8d5dc453b7416a6e19ec09291cb320c6886269ddbd0010499de31ce5",
+    "confidence_threshold": 0.243522012578616,
+    "image_size": 640
+  },
+  "fusion": {
+    "triage_rule": "or",
+    "review_on_disagreement": true
+  },
+  "disclaimer": "Research prototype only; not for diagnosis or treatment decisions."
+}
