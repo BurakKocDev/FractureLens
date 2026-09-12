@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FractureLens</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #071018;
+        --panel: rgba(15, 28, 39, 0.88);
+        --panel-strong: #10212e;
+        --line: rgba(151, 178, 197, 0.18);
+        --text: #edf7fb;
+        --muted: #8fa8b8;
+        --accent: #42dbc5;
+        --accent-deep: #167a72;
+        --danger: #ff6b6b;
+        --warning: #ffc857;
+        --ok: #69e39c;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 18% 0%, rgba(32, 150, 153, 0.18), transparent 35rem),
+          radial-gradient(circle at 95% 10%, rgba(45, 92, 155, 0.17), transparent 34rem),
+          var(--bg);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .shell { width: min(1240px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 48px; }
+      header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+      .brand { display: flex; align-items: center; gap: 12px; }
+      .mark {
+        width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px;
+        color: #061413; background: linear-gradient(145deg, #7bffe9, #25ad9f);
+        box-shadow: 0 10px 28px rgba(40, 202, 180, 0.2); font-weight: 900;
+      }
+      .brand h1 { margin: 0; font-size: 20px; letter-spacing: -0.02em; }
+      .brand p { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+      .api-link { color: var(--muted); text-decoration: none; font-size: 13px; }
+      .api-link:hover { color: var(--accent); }
+
+      main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(310px, 0.65fr); gap: 18px; }
+      .panel {
+        background: var(--panel); border: 1px solid var(--line); border-radius: 22px;
+        box-shadow: 0 18px 55px rgba(0, 0, 0, 0.22); backdrop-filter: blur(14px);
+      }
+      .viewer { padding: 16px; min-height: 650px; display: flex; flex-direction: column; }
+      .dropzone {
+        position: relative; flex: 1; min-height: 500px; display: grid; place-items: center;
+        overflow: hidden; border-radius: 16px; border: 1px dashed rgba(124, 216, 206, 0.3);
+        background: rgba(2, 8, 13, 0.48); transition: border-color 160ms, background 160ms;
+      }
+      .dropzone.dragging { border-color: var(--accent); background: rgba(34, 150, 140, 0.1); }
+      .drop-content { text-align: center; padding: 30px; max-width: 390px; }
+      .upload-icon { font-size: 38px; margin-bottom: 14px; }
+      .drop-content h2 { margin: 0 0 8px; font-size: 20px; }
+      .drop-content p { margin: 0 0 20px; color: var(--muted); line-height: 1.55; font-size: 14px; }
+      .button {
+        border: 0; border-radius: 12px; padding: 11px 18px; font: inherit; font-weight: 700;
+        cursor: pointer; transition: transform 140ms, opacity 140ms, background 140ms;
+      }
+      .button:hover:not(:disabled) { transform: translateY(-1px); }
+      .button:disabled { opacity: 0.42; cursor: not-allowed; }
+      .primary { color: #06201c; background: linear-gradient(135deg, #71f1dd, #34c5b4); }
+      .secondary { color: var(--text); background: rgba(255, 255, 255, 0.07); }
+      #image-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+      #canvas { display: none; width: 100%; height: 100%; object-fit: contain; }
+      .filebar { display: none; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 2px 0; }
+      .filename { min-width: 0; color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+      .results { padding: 22px; display: flex; flex-direction: column; min-height: 650px; }
+      .results h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin: 0 0 18px; }
+      .empty { margin: auto 0; text-align: center; color: var(--muted); line-height: 1.6; }
+      .empty strong { display: block; color: var(--text); margin-bottom: 5px; }
+      #result { display: none; }
+      .decision { padding: 17px; border-radius: 15px; border: 1px solid var(--line); background: var(--panel-strong); margin-bottom: 14px; }
+      .decision-label { color: var(--muted); font-size: 12px; margin-bottom: 7px; }
+      .decision-title { font-size: 20px; font-weight: 800; line-height: 1.25; }
+      .decision-note { color: var(--muted); font-size: 13px; margin-top: 7px; line-height: 1.45; }
+      .metric { padding: 15px 0; border-bottom: 1px solid var(--line); }
+      .metric-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 9px; }
+      .metric-name { color: var(--muted); font-size: 13px; }
+      .metric-value { font-size: 18px; font-weight: 800; }
+      .bar { height: 7px; background: rgba(255, 255, 255, 0.08); border-radius: 99px; overflow: hidden; position: relative; }
+      .bar-fill { height: 100%; width: 0; background: linear-gradient(90deg, #299c92, var(--accent)); border-radius: inherit; transition: width 500ms ease; }
+      .threshold { position: absolute; top: -2px; width: 2px; height: 11px; background: #fff; opacity: 0.72; }
+      .rows { margin-top: 12px; }
+      .row { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; font-size: 13px; }
+      .row span:first-child { color: var(--muted); }
+      .pill { padding: 3px 8px; border-radius: 99px; font-size: 11px; font-weight: 800; }
+      .pill.yes { color: #052416; background: var(--ok); }
+      .pill.no { color: #d8e4ea; background: rgba(255,255,255,.1); }
+      .pill.review { color: #2b1c00; background: var(--warning); }
+      .disclaimer { margin-top: auto; padding-top: 22px; color: #748d9d; font-size: 11px; line-height: 1.5; }
+      .loader { display: none; margin: auto; text-align: center; color: var(--muted); }
+      .spinner { width: 34px; height: 34px; margin: 0 auto 14px; border: 3px solid rgba(255,255,255,.1); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+      .error { display: none; color: #ffd1d1; background: rgba(255, 75, 75, 0.12); border: 1px solid rgba(255, 107, 107, 0.32); border-radius: 12px; padding: 12px; font-size: 13px; margin-bottom: 14px; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      @media (max-width: 850px) {
+        main { grid-template-columns: 1fr; }
+        .viewer, .results { min-height: auto; }
+        .dropzone { min-height: 430px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header>
+        <div class="brand">
+          <div class="mark">FL</div>
+          <div><h1>FractureLens</h1><p>Kırık sınıflandırma ve lokalizasyon prototipi</p></div>
+        </div>
+        <a class="api-link" href="/docs">API belgeleri ↗</a>
+      </header>
+
+      <main>
+        <section class="panel viewer">
+          <div class="dropzone" id="dropzone">
+            <div class="drop-content" id="drop-content">
+              <div class="upload-icon">⌁</div>
+              <h2>Röntgen görüntüsünü yükle</h2>
+              <p>Görüntüyü buraya sürükleyin veya bilgisayarınızdan seçin. JPEG, PNG ve WebP; en fazla 25 MiB.</p>
+              <button class="button secondary" id="select-button" type="button">Görüntü seç</button>
+            </div>
+            <canvas id="canvas"></canvas>
+            <input id="image-input" type="file" accept="image/jpeg,image/png,image/webp" />
+          </div>
+          <div class="filebar" id="filebar">
+            <div class="filename" id="filename"></div>
+            <div class="actions">
+              <button class="button secondary" id="change-button" type="button">Değiştir</button>
+              <button class="button primary" id="analyze-button" type="button">Analiz et</button>
+            </div>
+          </div>
+        </section>
+
+        <aside class="panel results">
+          <h2>Analiz sonucu</h2>
+          <div class="error" id="error"></div>
+          <div class="loader" id="loader"><div class="spinner"></div>Modeller görüntüyü inceliyor…</div>
+          <div class="empty" id="empty"><strong>Henüz sonuç yok</strong>Başlamak için bir röntgen görüntüsü seçin.</div>
+          <div id="result">
+            <div class="decision">
+              <div class="decision-label">FÜZYON KARARI</div>
+              <div class="decision-title" id="decision-title"></div>
+              <div class="decision-note" id="decision-note"></div>
+            </div>
+            <div class="metric">
+              <div class="metric-head"><span class="metric-name">Kırık model skoru</span><span class="metric-value" id="probability"></span></div>
+              <div class="bar"><div class="bar-fill" id="probability-bar"></div><div class="threshold" id="threshold"></div></div>
+            </div>
+            <div class="rows">
+              <div class="row"><span>Sınıflandırıcı</span><span id="classifier-pill"></span></div>
+              <div class="row"><span>Tespit edilen bölge</span><strong id="box-count"></strong></div>
+              <div class="row"><span>Modeller uyumlu</span><span id="agreement-pill"></span></div>
+              <div class="row"><span>Uzman incelemesi</span><span id="review-pill"></span></div>
+            </div>
+          </div>
+          <div class="disclaimer">Araştırma prototipidir. Tanı veya tedavi kararı amacıyla kullanılamaz.</div>
+        </aside>
+      </main>
+    </div>
+
+    <script>
+      const input = document.querySelector("#image-input");
+      const selectButton = document.querySelector("#select-button");
+      const changeButton = document.querySelector("#change-button");
+      const analyzeButton = document.querySelector("#analyze-button");
+      const dropzone = document.querySelector("#dropzone");
+      const dropContent = document.querySelector("#drop-content");
+      const canvas = document.querySelector("#canvas");
+      const context = canvas.getContext("2d");
+      const filebar = document.querySelector("#filebar");
+      const filename = document.querySelector("#filename");
+      const empty = document.querySelector("#empty");
+      const loader = document.querySelector("#loader");
+      const result = document.querySelector("#result");
+      const error = document.querySelector("#error");
+      let selectedFile = null;
+      let sourceImage = null;
+      let objectUrl = null;
+
+      const allowed = new Set(["image/jpeg", "image/png", "image/webp"]);
+      const pill = (value, yesText = "Pozitif", noText = "Negatif") =>
+        `<span class="pill ${value ? "yes" : "no"}">${value ? yesText : noText}</span>`;
+
+      function showError(message) {
+        error.textContent = message;
+        error.style.display = "block";
+      }
+
+      function clearError() { error.style.display = "none"; }
+
+      function renderImage(boxes = []) {
+        if (!sourceImage) return;
+        canvas.width = sourceImage.naturalWidth;
+        canvas.height = sourceImage.naturalHeight;
+        context.drawImage(sourceImage, 0, 0);
+        const lineWidth = Math.max(4, Math.round(Math.min(canvas.width, canvas.height) / 300));
+        context.lineWidth = lineWidth;
+        context.font = `bold ${Math.max(22, lineWidth * 3)}px system-ui`;
+        for (const box of boxes) {
+          const [x1, y1, x2, y2] = box.xyxy;
+          context.strokeStyle = "#ff5252";
+          context.fillStyle = "#ff5252";
+          context.strokeRect(x1, y1, x2 - x1, y2 - y1);
+          const label = `${Math.round(box.confidence * 100)}%`;
+          const labelWidth = context.measureText(label).width + 16;
+          const labelHeight = Math.max(30, lineWidth * 4);
+          const labelY = Math.max(0, y1 - labelHeight);
+          context.fillRect(x1, labelY, labelWidth, labelHeight);
+          context.fillStyle = "white";
+          context.fillText(label, x1 + 8, labelY + labelHeight - 7);
+        }
+      }
+
+      function selectFile(file) {
+        clearError();
+        if (!file || !allowed.has(file.type)) return showError("JPEG, PNG veya WebP biçiminde bir görüntü seçin.");
+        if (file.size > 25 * 1024 * 1024) return showError("Görüntü 25 MiB sınırını aşıyor.");
+        selectedFile = file;
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        objectUrl = URL.createObjectURL(file);
+        sourceImage = new Image();
+        sourceImage.onload = () => renderImage();
+        sourceImage.onerror = () => showError("Görüntü önizlenemedi.");
+        sourceImage.src = objectUrl;
+        filename.textContent = `${file.name} · ${(file.size / 1024 / 1024).toFixed(2)} MiB`;
+        dropContent.style.display = "none";
+        canvas.style.display = "block";
+        filebar.style.display = "flex";
+        empty.style.display = "block";
+        empty.innerHTML = "<strong>Görüntü hazır</strong>Analizi başlatmak için düğmeye basın.";
+        result.style.display = "none";
+      }
+
+      const decisionCopy = {
+        "global_and_local_evidence": ["Kırık şüphesi — uyumlu bulgu", "Sınıflandırıcı ve lokalizasyon modeli aynı yönde bulgu üretti."],
+        "global_signal_without_local_evidence": ["Kırık şüphesi — bölge doğrulanamadı", "Genel model pozitif; lokalizasyon modeli eşik üstü bir bölge bulamadı. Uzman incelemesi gerekir."],
+        "local_evidence_without_global_signal": ["Lokal şüpheli bölge", "Lokalizasyon modeli bulgu gösterdi; genel sınıflandırıcı negatif. Uzman incelemesi gerekir."],
+        "no_fracture_evidence": ["Kırık bulgusu saptanmadı", "Her iki model de belirlenen eşiklerde negatif sonuç verdi."]
+      };
+
+      function showResult(data) {
+        const probability = data.classification.fracture_probability;
+        const threshold = data.classification.threshold;
+        const copy = decisionCopy[data.decision.status] || [data.decision.status, "Model kararı oluşturuldu."];
+        document.querySelector("#decision-title").textContent = copy[0];
+        document.querySelector("#decision-note").textContent = copy[1];
+        document.querySelector("#probability").textContent = `%${(probability * 100).toFixed(1)}`;
+        document.querySelector("#probability-bar").style.width = `${Math.min(100, probability * 100)}%`;
+        document.querySelector("#threshold").style.left = `${threshold * 100}%`;
+        document.querySelector("#classifier-pill").innerHTML = pill(data.classification.positive);
+        document.querySelector("#box-count").textContent = data.localization.count;
+        document.querySelector("#agreement-pill").innerHTML = pill(data.decision.agreement, "Evet", "Hayır");
+        document.querySelector("#review-pill").innerHTML = data.decision.review_required
+          ? '<span class="pill review">Gerekli</span>'
+          : '<span class="pill yes">Gerekli değil</span>';
+        renderImage(data.localization.boxes);
+        loader.style.display = "none";
+        result.style.display = "block";
+      }
+
+      async function analyze() {
+        if (!selectedFile) return;
+        clearError();
+        empty.style.display = "none";
+        result.style.display = "none";
+        loader.style.display = "block";
+        analyzeButton.disabled = true;
+        const form = new FormData();
+        form.append("file", selectedFile);
+        try {
+          const response = await fetch("/v1/predict", { method: "POST", body: form });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.detail || "Analiz tamamlanamadı.");
+          showResult(data);
+        } catch (reason) {
+          loader.style.display = "none";
+          empty.style.display = "block";
+          showError(reason.message || "Sunucuya ulaşılamadı.");
+        } finally {
+          analyzeButton.disabled = false;
+        }
+      }
+
+      selectButton.addEventListener("click", () => input.click());
+      changeButton.addEventListener("click", () => input.click());
+      analyzeButton.addEventListener("click", analyze);
+      input.addEventListener("change", () => selectFile(input.files[0]));
+      ["dragenter", "dragover"].forEach(name => dropzone.addEventListener(name, event => {
+        event.preventDefault(); dropzone.classList.add("dragging");
+      }));
+      ["dragleave", "drop"].forEach(name => dropzone.addEventListener(name, event => {
+        event.preventDefault(); dropzone.classList.remove("dragging");
+      }));
+      dropzone.addEventListener("drop", event => selectFile(event.dataTransfer.files[0]));
+    </script>
+  </body>
+</html>

@@ -6,6 +6,14 @@ from PIL import Image
 from fracturelens.service.app import app
 
 
+def test_web_app_is_available_without_loading_models() -> None:
+    response = TestClient(app).get("/")
+
+    assert response.status_code == 200
+    assert "FractureLens" in response.text
+    assert 'id="image-input"' in response.text
+
+
 def test_health_does_not_load_models() -> None:
     response = TestClient(app).get("/health")
 

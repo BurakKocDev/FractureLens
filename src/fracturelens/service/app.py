@@ -6,11 +6,13 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi.responses import HTMLResponse
 from PIL import Image, UnidentifiedImageError
 
 from fracturelens.inference.pipeline import FractureLensPipeline
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
+WEB_APP_PATH = Path(__file__).with_name("static") / "index.html"
 DISCLAIMER = "Research prototype only; not for diagnosis or treatment decisions."
 
 app = FastAPI(
@@ -26,6 +28,11 @@ def get_pipeline() -> FractureLensPipeline:
         PROJECT_ROOT,
         PROJECT_ROOT / "configs/inference/track_b_fused.json",
     )
+
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+def web_app() -> HTMLResponse:
+    return HTMLResponse(WEB_APP_PATH.read_text(encoding="utf-8"))
 
 
 @app.get("/health")
