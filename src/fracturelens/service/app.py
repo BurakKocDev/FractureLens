@@ -3,8 +3,9 @@ from __future__ import annotations
 from functools import lru_cache
 from io import BytesIO
 from pathlib import Path
+from typing import Annotated
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from PIL import Image, UnidentifiedImageError
 
 from fracturelens.inference.pipeline import FractureLensPipeline
@@ -33,11 +34,22 @@ def health() -> dict[str, str]:
 
 
 @app.post("/v1/predict")
-async def predict(request: Request) -> dict:
-    content_type = request.headers.get("content-type", "").split(";", maxsplit=1)[0]
+async def predict(
+    request: Request,
+    file: Annotated[
+        UploadFile | None,
+        File(description="JPEG, PNG, or WebP X-ray image (maximum 25 MiB)"),
+    ] = None,
+) -> dict:
+    if file is None:
+        content_type = request.headers.get("content-type", "").split(";", maxsplit=1)[0]
+        body = await request.body()
+    else:
+        content_type = (file.content_type or "").split(";", maxsplit=1)[0]
+        body = await file.read(25 * 1024 * 1024 + 1)
+
     if content_type not in {"image/jpeg", "image/png", "image/webp"}:
-        raise HTTPException(status_code=415, detail="Send a JPEG, PNG, or WebP request body")
-    body = await request.body()
+        raise HTTPException(status_code=415, detail="Upload a JPEG, PNG, or WebP image")
     if not body or len(body) > 25 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="Image must be between 1 byte and 25 MiB")
     try:
