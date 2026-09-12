@@ -56,6 +56,21 @@ The detailed study protocol lives in `docs/study_protocol.md`; verified data
 findings and decisions are in `docs/data_audit_report.md` and
 `docs/dataset_card.md`.
 
+## Track A detection
+
+The training code stays in the repository; only source images, linked training
+trees, downloaded weights, and run artifacts stay outside Git.
+
+```powershell
+./scripts/setup_training.ps1
+python scripts/prepare_track_a_yolo.py
+python scripts/train_track_a.py --task detect --epochs 1 --batch 2 --name track_a_detect_smoke
+python scripts/train_track_a.py --task detect --epochs 30 --batch 2 --name track_a_detect_30ep
+```
+
+The trainer refuses to fall back silently to CPU, records environment and Git
+provenance, and refuses to overwrite an existing named run.
+
 ## Source and attribution
 
 FracAtlas is distributed under CC BY 4.0. Cite:
