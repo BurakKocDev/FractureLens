@@ -19,6 +19,9 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train Track B detector with negative images")
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--batch", type=int, default=16)
+    parser.add_argument("--optimizer", choices=("auto", "SGD", "AdamW"), default="auto")
+    parser.add_argument("--lr0", type=float, default=0.01)
+    parser.add_argument("--lrf", type=float, default=0.01)
     parser.add_argument("--name", default="track_b_detect_yolov8s_transfer_30ep")
     parser.add_argument(
         "--weights",
@@ -77,6 +80,9 @@ def main() -> int:
         "epochs": args.epochs,
         "batch": args.batch,
         "imgsz": 640,
+        "optimizer": args.optimizer,
+        "lr0": args.lr0,
+        "lrf": args.lrf,
         "seed": 20260912,
         "test_accessed": False,
         "gpu": torch.cuda.get_device_name(0),
@@ -98,6 +104,9 @@ def main() -> int:
         exist_ok=False,
         plots=True,
         verbose=True,
+        optimizer=args.optimizer,
+        lr0=args.lr0,
+        lrf=args.lrf,
     )
     provenance["elapsed_seconds"] = round(time.perf_counter() - started, 3)
     provenance["peak_cuda_memory_mib"] = round(
