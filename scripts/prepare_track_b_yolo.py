@@ -13,7 +13,7 @@ from fracturelens.data.yolo import prepare_track_b_detection  # noqa: E402
 
 def main() -> int:
     dataset_root = locate_dataset_root(PROJECT_ROOT / "data" / "raw" / "fracatlas-v7")
-    output_root = PROJECT_ROOT / "data" / "processed" / "track_b_detect"
+    output_root = PROJECT_ROOT / "data" / "processed" / "track_b_detect_canonical"
     summary = prepare_track_b_detection(
         dataset_root,
         PROJECT_ROOT / "manifests" / "fracatlas_v7_clean_split_seed20260912.csv",

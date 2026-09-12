@@ -56,7 +56,7 @@ def main() -> int:
 
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA unavailable; refusing CPU training")
-    data_yaml = PROJECT_ROOT / "data/processed/track_b_detect/data.yaml"
+    data_yaml = PROJECT_ROOT / "data/processed/track_b_detect_canonical/data.yaml"
     if not data_yaml.is_file():
         raise FileNotFoundError("Run scripts/prepare_track_b_yolo.py first")
     weights = args.weights.resolve()

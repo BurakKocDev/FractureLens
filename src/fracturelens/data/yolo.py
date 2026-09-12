@@ -8,6 +8,8 @@ from collections import Counter, defaultdict
 from collections.abc import Iterable
 from pathlib import Path
 
+from fracturelens.data.audit import load_display_image
+
 OFFICIAL_SPLIT_FILES = {
     "train": "train.csv",
     "val": "valid.csv",
@@ -310,6 +312,7 @@ def prepare_track_b_detection(
     split_counts: Counter[str] = Counter()
     positive_counts: Counter[str] = Counter()
     instance_counts: Counter[str] = Counter()
+    recovered_images: Counter[str] = Counter()
     seen_ids: set[str] = set()
     output_rows = []
     for row in rows:
@@ -323,7 +326,14 @@ def prepare_track_b_detection(
         source_image = dataset_root / row["source_relative_path"]
         if not source_image.is_file():
             raise FileNotFoundError(source_image)
-        ensure_hardlink(source_image, output_root / "images" / split / image_id)
+        destination_image = output_root / "images" / split / image_id
+        if row["decode_status"] == "truncated_recovered":
+            destination_image.parent.mkdir(parents=True, exist_ok=True)
+            image = load_display_image(source_image).convert("RGB")
+            image.save(destination_image, format="JPEG", quality=95, subsampling=0)
+            recovered_images[split] += 1
+        else:
+            ensure_hardlink(source_image, destination_image)
         label_name = Path(image_id).with_suffix(".txt")
         destination_label = output_root / "labels" / split / label_name
         fractured = int(row["fractured"])
@@ -377,13 +387,14 @@ def prepare_track_b_detection(
     summary = {
         "dataset": "FracAtlas v7 cleaned duplicate-aware full split",
         "task": "detection",
-        "link_mode": "hardlink",
+        "link_mode": "hardlink_with_reencoded_truncated_recoveries",
         "image_counts": dict(split_counts),
         "positive_counts": dict(positive_counts),
         "negative_counts": {
             split: split_counts[split] - positive_counts[split] for split in expected
         },
         "instance_counts": dict(instance_counts),
+        "reencoded_truncated_images": dict(recovered_images),
         "unique_images": len(seen_ids),
         "manifest_sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
     }
