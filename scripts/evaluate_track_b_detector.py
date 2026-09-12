@@ -51,7 +51,9 @@ def load_targets(path: Path, width: int, height: int) -> np.ndarray:
     return np.asarray(boxes, dtype=np.float32).reshape(-1, 4)
 
 
-def collect(model: object, dataset_root: Path, split: str) -> list[dict[str, object]]:
+def collect(
+    model: object, dataset_root: Path, split: str, batch: int
+) -> list[dict[str, object]]:
     image_root = dataset_root / "images" / split
     label_root = dataset_root / "labels" / split
     image_paths = sorted(path for path in image_root.iterdir() if path.is_file())
@@ -59,6 +61,7 @@ def collect(model: object, dataset_root: Path, split: str) -> list[dict[str, obj
         source=[str(path) for path in image_paths],
         imgsz=640,
         conf=0.001,
+        batch=batch,
         device=0,
         stream=True,
         verbose=False,
@@ -171,9 +174,9 @@ def main() -> int:
     dataset_root = PROJECT_ROOT / "data/processed/track_b_detect_canonical"
     model = YOLO(str(weights))
 
-    validation_records = collect(model, dataset_root, "val")
+    validation_records = collect(model, dataset_root, "val", args.batch)
     threshold, validation_selection = select_threshold(validation_records, args.match_iou)
-    test_records = collect(model, dataset_root, "test")
+    test_records = collect(model, dataset_root, "test", args.batch)
     test_fixed = summarize(test_records, threshold, args.match_iou)
     froc = [
         {"threshold": float(value), **summarize(test_records, float(value), args.match_iou)}
