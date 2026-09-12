@@ -1,5 +1,5 @@
 {
-  "name": "fracturelens_track_b_fused_v1",
+  "name": "fracturelens_track_b_fused_v1.1",
   "classifier": {
     "model": "densenet121",
     "weights": "artifacts/runs/track_b_densenet121_letterbox_auprc_15ep/best.pt",
@@ -19,6 +19,8 @@
       "high_min": 0.40748427672956,
       "selection": "validation cumulative lesion precision >=0.70 and >=0.80"
     },
+    "nms_iou": 0.5,
+    "nms_selection": "validation maximum fixed-threshold lesion F1 among 0.30-0.70 candidates",
     "image_size": 640
   },
   "fusion": {

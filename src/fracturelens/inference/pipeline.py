@@ -94,6 +94,7 @@ class FractureLensPipeline:
             source=image,
             imgsz=int(detector_config["image_size"]),
             conf=float(detector_config["confidence_threshold"]),
+            iou=float(detector_config["nms_iou"]),
             device=self.device,
             verbose=False,
         )[0]
@@ -129,6 +130,7 @@ class FractureLensPipeline:
             },
             "localization": {
                 "threshold": float(detector_config["confidence_threshold"]),
+                "nms_iou": float(detector_config["nms_iou"]),
                 "count": len(boxes),
                 "max_confidence_level": (
                     max(boxes, key=lambda box: float(box["confidence"]))["confidence_level"]

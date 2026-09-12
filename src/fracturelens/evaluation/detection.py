@@ -32,6 +32,31 @@ def pairwise_iou_xyxy(targets: np.ndarray, predictions: np.ndarray) -> np.ndarra
     return np.divide(intersection, union, out=np.zeros_like(intersection), where=union > 0)
 
 
+def non_max_suppression_indices(
+    boxes: np.ndarray,
+    confidences: np.ndarray,
+    iou_threshold: float,
+) -> np.ndarray:
+    """Return confidence-ordered indices retained by class-agnostic NMS."""
+    boxes = np.asarray(boxes, dtype=np.float32).reshape(-1, 4)
+    confidences = np.asarray(confidences, dtype=np.float32).reshape(-1)
+    if len(boxes) != len(confidences):
+        raise ValueError("boxes and confidences must have equal length")
+    if not 0 <= iou_threshold <= 1:
+        raise ValueError("iou_threshold must be between 0 and 1")
+    order = np.argsort(-confidences)
+    kept: list[int] = []
+    while len(order):
+        current = int(order[0])
+        kept.append(current)
+        if len(order) == 1:
+            break
+        remaining = order[1:]
+        overlaps = pairwise_iou_xyxy(boxes[[current]], boxes[remaining])[0]
+        order = remaining[overlaps <= iou_threshold]
+    return np.asarray(kept, dtype=np.int64)
+
+
 def greedy_match(
     targets: np.ndarray,
     predictions: np.ndarray,

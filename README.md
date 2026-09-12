@@ -135,9 +135,10 @@ curl.exe -X POST http://127.0.0.1:8000/v1/predict -H "Content-Type: image/jpeg" 
 Open `http://127.0.0.1:8000/` for the local browser interface. The API accepts
 raw or multipart JPEG, PNG, and WebP requests up to 25 MiB. Localization boxes
 receive validation-derived low/medium/high display tiers; these describe model
-confidence rather than disease severity or clinical certainty. The application
-is a research prototype and must not be used for diagnosis or treatment
-decisions.
+confidence rather than disease severity or clinical certainty. A
+validation-selected NMS IoU of 0.50 reduces duplicate visual candidates in the
+local inference bundle. The application is a research prototype and must not be
+used for diagnosis or treatment decisions.
 
 ## Source and attribution
 

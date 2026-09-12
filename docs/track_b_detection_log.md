@@ -38,6 +38,24 @@ precision of at least 0.70 and 0.80. These labels describe detector confidence,
 not disease severity or clinical certainty, and do not change the frozen
 operating point.
 
+## Inference overlap post-processing
+
+The canonical evaluation above used Ultralytics' default NMS IoU of 0.70. A
+separate overlap audit used validation only to compare NMS IoU candidates from
+0.30 to 0.70 at the already-frozen confidence threshold. IoU 0.50 maximized
+validation fixed-threshold lesion F1: it removed 11 of 61 retained boxes,
+raised precision from 0.607 to 0.720 and F1 from 0.503 to 0.529, while lesion
+sensitivity changed from 0.430 to 0.419.
+
+After selecting 0.50 on validation, the one-time test comparison removed 31 of
+134 boxes. Test precision increased from 0.594 to 0.738 and F1 from 0.511 to
+0.545; lesion sensitivity changed from 0.449 to 0.432. The negative-image
+false-alarm rate remained 0.76%. The local inference bundle therefore uses NMS
+IoU 0.50 to reduce duplicate visual candidates. Canonical mAP and operating
+point results remain reported unchanged above. Audit artifacts are stored under
+`artifacts/analysis/track_b_overlap_val/` and
+`artifacts/analysis/track_b_overlap_test/`.
+
 ## Global-to-local consistency
 
 DenseNet121 global classification was joined with YOLOv8s local evidence by
