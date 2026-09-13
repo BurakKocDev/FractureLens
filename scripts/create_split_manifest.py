@@ -50,7 +50,7 @@ def assign_groups(rows: list[dict[str, str]]) -> dict[str, str]:
         by_stratum[(next(iter(fracture_labels)), anatomy)].append((group_id, members))
 
     assignments: dict[str, str] = {}
-    for stratum_index, (stratum, groups) in enumerate(sorted(by_stratum.items())):
+    for stratum_index, (_stratum, groups) in enumerate(sorted(by_stratum.items())):
         rng = random.Random(SEED + stratum_index)
         rng.shuffle(groups)
         total = sum(len(members) for _, members in groups)
@@ -146,8 +146,14 @@ def main() -> int:
         "manifest_sha256": sha256_file(manifest_path),
         "limitations": [
             "FracAtlas has no patient identifiers; this is not a patient-level split.",
-            "Near-duplicate candidates are conservatively co-located, but repeated patients may remain.",
-            "Label-conflicting exact and near-duplicate components are excluded from model development.",
+            (
+                "Near-duplicate candidates are conservatively co-located, "
+                "but repeated patients may remain."
+            ),
+            (
+                "Label-conflicting exact and near-duplicate components are "
+                "excluded from model development."
+            ),
         ],
     }
     summary_path = MANIFEST_ROOT / "fracatlas_v7_clean_split_summary.json"
@@ -158,4 +164,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

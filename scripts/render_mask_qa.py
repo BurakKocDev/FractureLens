@@ -83,7 +83,12 @@ def main() -> int:
             "unknown",
         )
         label = f"{image_id} | {anatomy} | instances={row['fracture_count']}"
-        sheet_draw.text((column * tile_width + 6, (row_index + 1) * tile_height - 34), label, fill="black", font=font)
+        sheet_draw.text(
+            (column * tile_width + 6, (row_index + 1) * tile_height - 34),
+            label,
+            fill="black",
+            font=font,
+        )
         sheet_draw.rectangle(
             (
                 column * tile_width,

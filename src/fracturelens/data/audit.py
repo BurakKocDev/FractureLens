@@ -403,7 +403,11 @@ def validate_yolo(dataset_root: Path, records: list[ImageRecord]) -> dict[str, A
         if not path.is_file():
             missing.append(record.image_id)
             continue
-        lines = [line.strip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        lines = [
+            line.strip()
+            for line in path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
         line_counts[record.image_id] = len(lines)
         for line_number, line in enumerate(lines, start=1):
             parts = line.split()
@@ -479,7 +483,9 @@ def validate_official_splits(dataset_root: Path, records: list[ImageRecord]) -> 
     counts = Counter(all_members)
     return {
         "counts": {split: len(members) for split, members in split_members.items()},
-        "duplicates_across_or_within_splits": sorted(name for name, count in counts.items() if count > 1),
+        "duplicates_across_or_within_splits": sorted(
+            name for name, count in counts.items() if count > 1
+        ),
         "positive_images_missing_from_splits": sorted(positive_names - set(all_members)),
         "split_images_not_positive": sorted(set(all_members) - positive_names),
     }
@@ -587,7 +593,11 @@ def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         for row in rows:
             writer.writerow(
                 {
-                    key: json.dumps(value, ensure_ascii=False) if isinstance(value, (list, dict)) else value
+                    key: (
+                        json.dumps(value, ensure_ascii=False)
+                        if isinstance(value, (list, dict))
+                        else value
+                    )
                     for key, value in row.items()
                 }
             )
@@ -632,7 +642,13 @@ def make_contact_sheet(records: list[ImageRecord], output: Path, columns: int = 
             f"{record.image_id} F={record.fractured} n={record.fracture_count}\n"
             f"{record.anatomy} | {record.view} | HW={record.hardware} M={record.multiscan}"
         )
-        draw.multiline_text((x + 5, y + tile_height - 46), label, fill="black", font=font, spacing=2)
+        draw.multiline_text(
+            (x + 5, y + tile_height - 46),
+            label,
+            fill="black",
+            font=font,
+            spacing=2,
+        )
         draw.rectangle((x, y, x + tile_width - 1, y + tile_height - 1), outline="#a0a0a0")
 
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -660,7 +676,12 @@ def make_pair_contact_sheet(
             sheet.paste(image, (x, y))
             fracture_label = candidate.get(f"{side}_fractured", "?")
             label = f"{candidate[f'{side}_image_id']} F={fracture_label}"
-            draw.text((column_index * tile_width + 5, y + image.height + 4), label, fill="black", font=font)
+            draw.text(
+                (column_index * tile_width + 5, y + image.height + 4),
+                label,
+                fill="black",
+                font=font,
+            )
         metrics = (
             f"p={candidate['phash_distance']} d={candidate['dhash_distance']} "
             f"ssim={candidate['global_ssim']:.3f}"
@@ -717,8 +738,12 @@ def run_audit(search_root: Path, output_root: Path) -> dict[str, Any]:
         "exact_file_redundant_images": sum(group["redundant_count"] for group in file_duplicates),
         "exact_pixel_duplicate_groups": len(pixel_duplicates),
         "exact_pixel_redundant_images": sum(group["redundant_count"] for group in pixel_duplicates),
-        "exact_file_label_conflict_groups": sum(group["label_conflict"] for group in file_duplicates),
-        "exact_pixel_label_conflict_groups": sum(group["label_conflict"] for group in pixel_duplicates),
+        "exact_file_label_conflict_groups": sum(
+            group["label_conflict"] for group in file_duplicates
+        ),
+        "exact_pixel_label_conflict_groups": sum(
+            group["label_conflict"] for group in pixel_duplicates
+        ),
         "near_duplicate_candidates": len(near_candidates),
         "near_duplicate_label_conflict_pairs": sum(
             candidate["label_conflict"] for candidate in near_candidates
@@ -737,7 +762,10 @@ def run_audit(search_root: Path, output_root: Path) -> dict[str, Any]:
     write_csv(output_root / "image_inventory.csv", [asdict(record) for record in records])
     write_csv(output_root / "exact_file_duplicates.csv", file_duplicates)
     write_csv(output_root / "exact_pixel_duplicates.csv", pixel_duplicates)
-    write_csv(output_root / "physical_duplicate_groups.csv", physical_duplicate_groups(dataset_root))
+    write_csv(
+        output_root / "physical_duplicate_groups.csv",
+        physical_duplicate_groups(dataset_root),
+    )
     write_csv(output_root / "near_duplicate_candidates.csv", near_candidates)
 
     qa_records = select_qa_records(records)

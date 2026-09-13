@@ -33,6 +33,7 @@ wandb/**
 # Front-end/build output
 node_modules/
 dist/
+build/
 .next/
 
 # Editors and operating systems

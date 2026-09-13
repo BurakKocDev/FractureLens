@@ -19,8 +19,12 @@ def main() -> int:
 
     for split in ("train", "validation", "test"):
         dataset = FracAtlasManifestDataset(dataset_root, manifest, split)
-        positive_indices = [index for index, row in enumerate(dataset.rows) if int(row["fractured"]) == 1]
-        negative_indices = [index for index, row in enumerate(dataset.rows) if int(row["fractured"]) == 0]
+        positive_indices = [
+            index for index, row in enumerate(dataset.rows) if int(row["fractured"]) == 1
+        ]
+        negative_indices = [
+            index for index, row in enumerate(dataset.rows) if int(row["fractured"]) == 0
+        ]
         indices = positive_indices[:4] + negative_indices[:4]
         batch = [dataset[index] for index in indices]
         validate_batch(batch)

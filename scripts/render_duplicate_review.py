@@ -118,7 +118,9 @@ def main() -> int:
         chunk = candidates[start : start + 10]
         chunk_path = audit_root / f"near_duplicate_review_{start // 10 + 1:02d}.jpg"
         make_pair_contact_sheet(chunk, chunk_path, pair_limit=len(chunk))
-    conflict_candidates = [candidate for candidate in candidates if candidate["label_conflict"] == "True"]
+    conflict_candidates = [
+        candidate for candidate in candidates if candidate["label_conflict"] == "True"
+    ]
     near_conflict_path = audit_root / "near_duplicate_label_conflicts.jpg"
     make_pair_contact_sheet(
         conflict_candidates,
