@@ -113,7 +113,8 @@ python scripts/analyze_track_b_errors.py
 See `docs/track_b_experiment_log.md` for the complete configuration, bootstrap
 confidence intervals, subgroup results, threshold audit note, and next ablation.
 Detection and global-to-local consistency results are recorded in
-`docs/track_b_detection_log.md`.
+`docs/track_b_detection_log.md`. A test-set outcome taxonomy and reproducible
+qualitative contact sheet are available in `docs/fused_error_analysis.md`.
 
 ## Fused inference prototype
 
