@@ -3,8 +3,9 @@
 ## Scope
 
 Track B evaluates fracture versus non-fracture classification on the frozen,
-duplicate-group-aware FracAtlas v7 split. This is a technical research baseline,
-not a clinical diagnostic model.
+duplicate-group-aware FracAtlas v7 split. It contains the MobileNetV3-Small
+baseline and the final calibrated DenseNet121 comparator. This is a technical
+research benchmark, not a clinical diagnostic model.
 
 ## Data protocol
 
@@ -124,11 +125,11 @@ Generated local artifacts:
 - `error_analysis/reliability_diagram.png`
 - `error_analysis/ranked_errors.csv`
 
-## Decision and next experiment
+## Baseline decision and completed comparator
 
-The mobile baseline is retained. Its ranking performance is strong enough to
-justify the end-to-end product path, while the calibration and subgroup gaps
-rule out presenting the raw probability as clinical certainty.
+The mobile baseline is retained as the lightweight comparison. Its ranking
+performance justified the end-to-end path, while its calibration and subgroup
+gaps ruled out presenting the raw probability as clinical certainty.
 
 Before training the heavier DenseNet121 comparator, the next validation-only
 experiment should test a shortcut-resistant MobileNetV3-Small variant:
@@ -139,6 +140,27 @@ experiment should test a shortcut-resistant MobileNetV3-Small variant:
 4. fit temperature scaling on validation only and report calibrated ECE/Brier;
 5. compare against this baseline without reopening the frozen test during tuning.
 
-After this ablation is frozen, compare MobileNetV3-Small with DenseNet121. Then
-train Track B detection with negative images so classifier-localizer consistency
-can be evaluated on the same manifest.
+These planned steps were completed. The final DenseNet121 run used 224×224
+letterbox preprocessing, ImageNet initialization, weighted BCE, AdamW at 3e-4,
+batch size 8, and 15 epochs. Epoch 13 was selected by validation AUPRC. It was
+then temperature-scaled on validation only with T=1.1858, producing a calibrated
+threshold of 0.3595.
+
+## Final DenseNet121 frozen test
+
+| Metric | Point estimate | Bootstrap 95% CI |
+| --- | ---: | ---: |
+| AUROC | 0.9120 | 0.8829–0.9386 |
+| AUPRC | 0.7811 | 0.7177–0.8378 |
+| Sensitivity | 0.7730 | 0.6974–0.8429 |
+| Specificity | 0.8815 | 0.8567–0.9044 |
+| Balanced accuracy | 0.8273 | 0.7872–0.8645 |
+| F1 | 0.6646 | 0.6000–0.7210 |
+| ECE, 10 bins | 0.0573 | 0.0426–0.0788 |
+| Brier score | 0.0841 | 0.0707–0.0991 |
+
+The confusion matrix is TP=109, TN=580, FP=78, and FN=32. The canonical
+evaluation artifact is
+`artifacts/evaluations/track_b_densenet121_letterbox_auprc_15ep_test_calibrated_b8/`.
+The negative-aware detector and fused consistency analysis were also completed;
+their results are recorded in `docs/track_b_detection_log.md`.

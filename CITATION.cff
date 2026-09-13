@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+title: FractureLens
+message: If you use this research software, please cite it and the FracAtlas dataset.
+type: software
+authors:
+  - given-names: Burak
+    family-names: Koc
+version: 0.1.0
+date-released: 2026-09-13
+license: MIT
+abstract: >-
+  A duplicate-aware research pipeline and local application for calibrated
+  fracture classification, localization, segmentation, and global-local model
+  disagreement analysis on musculoskeletal radiographs.
+keywords:
+  - medical imaging
+  - fracture detection
+  - deep learning
+  - computer vision
+  - model calibration
+  - selective prediction
+references:
+  - type: dataset
+    title: FracAtlas
+    doi: 10.6084/m9.figshare.22363012.v7
