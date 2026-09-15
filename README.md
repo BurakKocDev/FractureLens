@@ -1,5 +1,10 @@
 # FractureLens
 
+[![CI](https://github.com/BurakKocDev/FractureLens/actions/workflows/ci.yml/badge.svg)](https://github.com/BurakKocDev/FractureLens/actions/workflows/ci.yml)
+[![CodeQL](https://img.shields.io/badge/CodeQL-enabled-2ea44f?logo=github)](https://github.com/BurakKocDev/FractureLens/security/code-scanning)
+[![Release](https://img.shields.io/github/v/release/BurakKocDev/FractureLens)](https://github.com/BurakKocDev/FractureLens/releases/latest)
+[![License: MIT](https://img.shields.io/badge/Code_License-MIT-blue.svg)](LICENSE)
+
 FractureLens is an end-to-end research prototype for global fracture
 classification, local fracture detection, calibrated confidence, and explicit
 model-disagreement analysis on musculoskeletal radiographs.
